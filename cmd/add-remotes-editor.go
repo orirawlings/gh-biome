@@ -132,6 +132,7 @@ func updateConfig(cfg *config.Config, remotes map[string]remote) {
 	for _, r := range remotes {
 		if r.Disabled {
 			cfg.RemoveSubsection("remote", r.Name)
+			continue
 		}
 		cfg.SetOption("remote", r.Name, "url", r.FetchURL)
 		cfg.SetOption("remote", r.Name, "fetch", fmt.Sprintf("+refs/*:refs/remotes/%s/*", r.Name))
