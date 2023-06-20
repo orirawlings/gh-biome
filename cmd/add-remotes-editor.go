@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -66,6 +67,7 @@ var addRemotesEditorCmd = &cobra.Command{
 type remote struct {
 	Name     string
 	FetchURL string
+	Archived bool
 	Disabled bool
 }
 
@@ -88,8 +90,9 @@ func getRemotes(host, owner string) (map[string]remote, error) {
 		RepositoryOwner struct {
 			Repositories struct {
 				Nodes []struct {
-					IsLocked   bool
 					IsDisabled bool
+					IsArchived bool
+					IsLocked   bool
 					URL        string `graphql:"url"`
 					SSHURL     string `graphql:"sshUrl"`
 				}
@@ -114,6 +117,7 @@ func getRemotes(host, owner string) (map[string]remote, error) {
 			r := remote{
 				Name:     node.URL[8:],
 				FetchURL: node.SSHURL,
+				Archived: node.IsArchived,
 				Disabled: node.IsLocked || node.IsDisabled,
 			}
 			remotes[r.Name] = r
@@ -136,6 +140,7 @@ func updateConfig(cfg *config.Config, remotes map[string]remote) {
 		}
 		cfg.SetOption("remote", r.Name, "url", r.FetchURL)
 		cfg.SetOption("remote", r.Name, "fetch", fmt.Sprintf("+refs/*:refs/remotes/%s/*", r.Name))
+		cfg.SetOption("remote", r.Name, "archived", strconv.FormatBool(r.Archived))
 		cfg.SetOption("remote", r.Name, "tagOpt", "--no-tags")
 		groupOptions = append(groupOptions, &config.Option{
 			Key:   r.Group(),
