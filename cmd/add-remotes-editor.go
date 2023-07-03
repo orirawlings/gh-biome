@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,10 +11,6 @@ import (
 	"github.com/cli/go-gh/v2/pkg/api"
 	graphql "github.com/cli/shurcooL-graphql"
 	"github.com/go-git/go-git/v5/plumbing/format/config"
-)
-
-const (
-	RemoteGroupPrefix = "ubergit-"
 )
 
 func init() {
@@ -69,13 +63,6 @@ type remote struct {
 	FetchURL string
 	Archived bool
 	Disabled bool
-}
-
-func (r remote) Group() string {
-	dgst := sha1.New()
-	dgst.Write([]byte(r.Name))
-	sum := dgst.Sum(nil)
-	return RemoteGroupPrefix + hex.EncodeToString(sum)[:2]
 }
 
 func getRemotes(host, owner string) (map[string]remote, error) {
@@ -132,7 +119,6 @@ func getRemotes(host, owner string) (map[string]remote, error) {
 }
 
 func updateConfig(cfg *config.Config, remotes map[string]remote) {
-	var groupOptions config.Options
 	for _, r := range remotes {
 		if r.Disabled {
 			cfg.RemoveSubsection("remote", r.Name)
@@ -142,24 +128,5 @@ func updateConfig(cfg *config.Config, remotes map[string]remote) {
 		cfg.SetOption("remote", r.Name, "fetch", fmt.Sprintf("+refs/*:refs/remotes/%s/*", r.Name))
 		cfg.SetOption("remote", r.Name, "archived", strconv.FormatBool(r.Archived))
 		cfg.SetOption("remote", r.Name, "tagOpt", "--no-tags")
-		groupOptions = append(groupOptions, &config.Option{
-			Key:   r.Group(),
-			Value: r.Name,
-		})
 	}
-	remoteGroups := cfg.Section("remotes")
-	for _, opt := range remoteGroups.Options {
-		remote, ok := remotes[opt.Value]
-		if ok && strings.HasPrefix(opt.Key, RemoteGroupPrefix) {
-			// We've already mapped known remotes to the proper ubergit group.
-			// Drop duplicates or misassignments.
-			continue
-		}
-		if ok && remote.Disabled {
-			// Remove disabled remotes from all existing groups.
-			continue
-		}
-		groupOptions = append(groupOptions, opt)
-	}
-	remoteGroups.Options = groupOptions
 }
