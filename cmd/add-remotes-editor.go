@@ -49,7 +49,7 @@ var addRemotesEditorCmd = &cobra.Command{
 		config.NewDecoder(configFile).Decode(cfg)
 		updateConfig(cfg, remotes)
 
-		w, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+		w, err := os.Create(path)
 		if err != nil {
 			return err
 		}
