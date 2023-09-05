@@ -103,7 +103,7 @@ func getRemotes(host, owner string) (map[string]remote, error) {
 		for _, node := range query.RepositoryOwner.Repositories.Nodes {
 			r := remote{
 				Name:     node.URL[8:],
-				FetchURL: node.SSHURL,
+				FetchURL: node.URL + ".git",
 				Archived: node.IsArchived,
 				Disabled: node.IsLocked || node.IsDisabled,
 			}

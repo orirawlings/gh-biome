@@ -11,16 +11,16 @@ func TestUpdateConfig(t *testing.T) {
 	remotes := byName([]remote{
 		{
 			Name:     "github.com/foo/bar",
-			FetchURL: "git@github.com:foo/bar.git",
+			FetchURL: "https://github.com/foo/bar.git",
 		},
 		{
 			Name:     "github.com/foo/archived",
-			FetchURL: "git@github.com:foo/archived.git",
+			FetchURL: "https://github.com/foo/archived.git",
 			Archived: true,
 		},
 		{
 			Name:     "github.com/foo/disabled",
-			FetchURL: "git@github.com:foo/disabled.git",
+			FetchURL: "https://github.com/foo/disabled.git",
 			Disabled: true,
 		},
 	})
