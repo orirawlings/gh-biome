@@ -10,20 +10,11 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cfg := config.New()
 	remotes := byName([]remote{
-		{
-			Name:     "github.com/foo/bar",
-			FetchURL: "https://github.com/foo/bar.git",
-		},
-		{
-			Name:     "github.com/foo/archived",
-			FetchURL: "https://github.com/foo/archived.git",
-			Archived: true,
-		},
-		{
-			Name:     "github.com/foo/disabled",
-			FetchURL: "https://github.com/foo/disabled.git",
-			Disabled: true,
-		},
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
 	})
 	updateConfig(cfg, remotes)
 	for _, r := range remotes {
@@ -41,20 +32,11 @@ func TestUpdateConfig(t *testing.T) {
 
 func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 	remotes := byName([]remote{
-		{
-			Name:     "github.com/foo/bar",
-			FetchURL: "https://github.com/foo/bar.git",
-		},
-		{
-			Name:     "github.com/foo/archived",
-			FetchURL: "https://github.com/foo/archived.git",
-			Archived: true,
-		},
-		{
-			Name:     "github.com/foo/disabled",
-			FetchURL: "https://github.com/foo/disabled.git",
-			Disabled: true,
-		},
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
 	})
 
 	f, err := os.CreateTemp("", "")

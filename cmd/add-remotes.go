@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -34,6 +36,7 @@ from any reference on the remote.`,
 		if err != nil {
 			return fmt.Errorf("could not query repositories: %w", err)
 		}
+		remotes := newRemotes(repos)
 
 		// persist remote data for git config editor
 		f, err := os.CreateTemp("", "")
@@ -41,7 +44,7 @@ from any reference on the remote.`,
 			return fmt.Errorf("cannot create temporary file for remotes data: %w", err)
 		}
 		defer os.Remove(f.Name()) // clean up
-		if err := newRemotes(repos).save(f); err != nil {
+		if err := remotes.save(f); err != nil {
 			return fmt.Errorf("cannot save remotes data for git config editor: %w", err)
 		}
 		if err := f.Close(); err != nil {
@@ -53,7 +56,13 @@ from any reference on the remote.`,
 		gitConfigCmd := exec.Command("git", "config", "--edit")
 		gitConfigCmd.Stderr = os.Stderr
 		gitConfigCmd.Stdout = os.Stdout
-		return gitConfigCmd.Run()
+		if err := gitConfigCmd.Run(); err != nil {
+			return fmt.Errorf("could not edit git config: %w", err)
+		}
+
+		// set HEADs for remote repositories
+		reason := strings.Join(append([]string{cmd.CommandPath()}, args...), " ")
+		return setHeads(reason, remotes)
 	},
 }
 
@@ -62,6 +71,7 @@ type remote struct {
 	FetchURL string
 	Archived bool
 	Disabled bool
+	Head     string
 }
 
 type remotes map[string]remote
@@ -74,6 +84,9 @@ func newRemotes(repos []repository) remotes {
 			FetchURL: repo.URL + ".git",
 			Archived: repo.IsArchived,
 			Disabled: repo.IsLocked || repo.IsDisabled,
+		}
+		if repo.DefaultBranchRef != nil {
+			r.Head = path.Join("refs/remotes/", r.Name, strings.TrimPrefix(repo.DefaultBranchRef.Prefix, "refs/"), repo.DefaultBranchRef.Name)
 		}
 		remotes[r.Name] = r
 	}
@@ -106,11 +119,17 @@ func (rs *remotes) load(r io.Reader) error {
 	return nil
 }
 
+type ref struct {
+	Name   string
+	Prefix string
+}
+
 type repository struct {
-	IsDisabled bool
-	IsArchived bool
-	IsLocked   bool
-	URL        string `graphql:"url"`
+	IsDisabled       bool
+	IsArchived       bool
+	IsLocked         bool
+	URL              string `graphql:"url"`
+	DefaultBranchRef *ref
 }
 
 func getRepos(args []string) ([]repository, error) {
@@ -157,4 +176,53 @@ func getRepos(args []string) ([]repository, error) {
 		}
 	}
 	return repos, nil
+}
+
+// setHeads will set HEADs for each remote, approximating
+// `git remote set-head --auto $remote`, but adjusted for the fact that we use
+// non-standard fetch refspecs.
+func setHeads(reason string, remotes remotes) error {
+	gitForEachRefCmd := exec.Command("git", "for-each-ref", "--format=%(refname)	%(symref)")
+	gitForEachRefCmd.Stderr = os.Stderr
+	r, err := gitForEachRefCmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("could not create output pipe for `%s`: %w", gitForEachRefCmd, err)
+	}
+	if err := gitForEachRefCmd.Start(); err != nil {
+		return fmt.Errorf("could not start `%s`: %w", gitForEachRefCmd, err)
+	}
+	symbolicRefs := make(map[string]string)
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 2 {
+			symbolicRefs[fields[0]] = fields[1]
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("could not scan output of `%s`: %w", gitForEachRefCmd, err)
+	}
+	if err := gitForEachRefCmd.Wait(); err != nil {
+		return fmt.Errorf("`%s` failed: %w", gitForEachRefCmd, err)
+	}
+	for _, remote := range remotes {
+		ref := fmt.Sprintf("refs/remotes/%s/HEAD", remote.Name)
+		if remote.Head == "" && symbolicRefs[ref] != "" {
+			// delete HEAD ref, it should no longer exist
+			cmd := exec.Command("git", "symbolic-ref", "--delete", ref)
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("could not remove HEAD ref for %s: `%s`: %w", remote.Name, cmd, err)
+			}
+		}
+		if remote.Head != "" && symbolicRefs[ref] != remote.Head {
+			// create or update HEAD ref
+			cmd := exec.Command("git", "symbolic-ref", "-m", reason, ref, remote.Head)
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("could not set HEAD ref for %s: `%s`: %w", remote.Name, cmd, err)
+			}
+		}
+	}
+	return nil
 }
