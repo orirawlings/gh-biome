@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -112,10 +118,142 @@ func TestNewRemotes(t *testing.T) {
 	}
 }
 
+func TestSetHeads(t *testing.T) {
+	repo, commitID := tempGitRepo(t)
+	if err := os.Chdir(repo); err != nil {
+		t.Fatalf("could not change directory to %s: %v", repo, err)
+	}
+
+	mainRef := "refs/remotes/github.com/orirawlings/gh-ubergit/heads/main"
+	if err := exec.Command("git", "update-ref", mainRef, commitID).Run(); err != nil {
+		t.Fatalf("could not update-ref %q to %q: %v", mainRef, commitID, err)
+	}
+
+	head := "refs/remotes/github.com/orirawlings/gh-ubergit/HEAD"
+
+	remotes := newRemotes([]repository{
+		{
+			URL: "https://github.com/orirawlings/gh-ubergit",
+			DefaultBranchRef: &ref{
+				Name:   "main",
+				Prefix: "refs/heads/",
+			},
+		},
+	})
+	if err := setHeads("test set heads", remotes); err != nil {
+		t.Fatalf("could not set heads on repo %s: %v", repo, err)
+	}
+	checkLooseSymbolicRef(t, head, mainRef)
+
+	aNewMainRef := "refs/remotes/github.com/orirawlings/gh-ubergit/heads/aNewMainBranch"
+	if err := exec.Command("git", "update-ref", aNewMainRef, commitID).Run(); err != nil {
+		t.Fatalf("could not update-ref %q to %q: %v", aNewMainRef, commitID, err)
+	}
+	remotes = newRemotes([]repository{
+		{
+			URL: "https://github.com/orirawlings/gh-ubergit",
+			DefaultBranchRef: &ref{
+				Name:   "aNewMainBranch",
+				Prefix: "refs/heads/",
+			},
+		},
+	})
+	if err := setHeads("test set heads", remotes); err != nil {
+		t.Fatalf("could not set heads on repo %s: %v", repo, err)
+	}
+	checkLooseSymbolicRef(t, head, aNewMainRef)
+
+	remotes = newRemotes([]repository{
+		{
+			URL: "https://github.com/orirawlings/gh-ubergit",
+		},
+	})
+	if err := setHeads("test set heads", remotes); err != nil {
+		t.Fatalf("could not set heads on repo %s: %v", repo, err)
+	}
+	if _, err := os.Open(head); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected symbolic ref %q to be deleted, but was not: %v", head, err)
+	}
+}
+
 func byName(remotes []remote) remotes {
 	result := make(map[string]remote)
 	for _, r := range remotes {
 		result[r.Name] = r
 	}
 	return result
+}
+
+// tempGitRepo initializes a bare git repository in a new temporary directory.
+// The repository is initialized with an initial commit object but no
+// references. Returns repo path and object ID of the initial commit.
+func tempGitRepo(t *testing.T) (string, string) {
+	path := t.TempDir()
+	cmd := exec.Command("git", "-C", path, "init", "--bare")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("could not init test git repo in %s: %v", path, err)
+	}
+
+	// Create the empty git tree object, 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+	if err := exec.Command("git", "-C", path, "write-tree").Run(); err != nil {
+		t.Fatalf("could not create the empty git tree in %q: %v", path, err)
+	}
+
+	// Create the initial commit
+	cmd = exec.Command("git", "-C", path, "hash-object", "-t", "commit", "-w", "--stdin")
+	w, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatalf("could not create stdin pipe for %q: %v", cmd, err)
+	}
+	r, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("could not create stdout pipe for %q: %v", cmd, err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("could not start %q in %q: %v", cmd, path, err)
+	}
+	if _, err := fmt.Fprint(w, `tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+author A <a@example.com> 0 +0000
+committer C <c@example.com> 0 +0000
+
+initial commit
+
+`); err != nil {
+		t.Fatalf("could not write commit data to %q in %q: %v", cmd, path, err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("could not close commit data to %q in %q: %v", cmd, path, err)
+	}
+	s := bufio.NewScanner(r)
+	var commitID string
+	for s.Scan() {
+		commitID = s.Text()
+	}
+	if err := s.Err(); err != nil {
+		t.Fatalf("could not read data from %q in %q: %v", cmd, path, err)
+	}
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("%q failed in %q: %v", cmd, path, err)
+	}
+	if err := exec.Command("git", "-C", path, "cat-file", "-e", commitID).Run(); err != nil {
+		t.Fatalf("could not confirm that %q was created in %q: %v", commitID, path, err)
+	}
+	return path, commitID
+}
+
+func checkLooseSymbolicRef(t *testing.T, ref, expected string) {
+	f, err := os.Open(ref)
+	defer func() {
+		_ = f.Close()
+	}()
+	if err != nil {
+		t.Fatalf("could not open symbolic ref %q: %v", ref, err)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		t.Fatalf("could not read symbolic ref %q: %v", ref, err)
+	}
+	if string(data) != fmt.Sprintf("ref: %s\n", expected) {
+		t.Errorf("expected %q to be a symbolic ref to %q, but had content %s", ref, expected, string(data))
+	}
 }
