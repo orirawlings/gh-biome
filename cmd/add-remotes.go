@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,7 +37,7 @@ from any reference on the remote.`,
 		if err != nil {
 			return fmt.Errorf("could not query repositories: %w", err)
 		}
-		remotes := newRemotes(repos)
+		remotes := newRemotes(cmd.Context(), repos)
 
 		// persist remote data for git config editor
 		f, err := os.CreateTemp("", "")
@@ -54,8 +55,8 @@ from any reference on the remote.`,
 		// invoke git config editor to add remote configs
 		os.Setenv("GIT_EDITOR", fmt.Sprintf("gh ubergit add-remotes-editor %s", f.Name()))
 		gitConfigCmd := exec.Command("git", "config", "--edit")
-		gitConfigCmd.Stderr = os.Stderr
-		gitConfigCmd.Stdout = os.Stdout
+		gitConfigCmd.Stderr = cmd.ErrOrStderr()
+		gitConfigCmd.Stdout = cmd.OutOrStdout()
 		if err := gitConfigCmd.Run(); err != nil {
 			return fmt.Errorf("could not edit git config: %w", err)
 		}
@@ -74,9 +75,41 @@ type remote struct {
 	Head     string
 }
 
+// FetchRefspec returns the refspec that should be used when fetching
+// references from the remote. The refspec will sync all references under
+// `refs/*` from the remote repo to `refs/remotes/<remote name>/*` in the
+// local repo. The destination part of the refspec is checked with
+// `git check-ref-format --refspec-pattern` to ensure it is valid.
+//
+// See https://git-scm.com/docs/git-check-ref-format
+func (r remote) FetchRefspec() (string, error) {
+	src := "refs/*"
+	dst := fmt.Sprintf("refs/remotes/%s/*", r.Name)
+	c := exec.Command("git", "check-ref-format", "--refspec-pattern", dst)
+	if err := c.Run(); err != nil {
+		// TODO (orirawlings): Instead of failing here, ideally we could
+		// fallback to some alternate, normalized refspec value that we know
+		// will be valid. Anyone scripting around `git-for-each-ref` would need
+		// to understand what that normalized format looks like, so it can be
+		// handled properly. This would allow us to add-remotes even for
+		// repos whose names do not make valid refspec path components. For
+		// example, `.github` repos:
+		// https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file#supported-file-types
+		return "", fmt.Errorf("refspec pattern invalid: %q %w", dst, err)
+	}
+	return fmt.Sprintf("+%s:%s", src, dst), nil
+}
+
+// Supported returns true if this remote configuration is currently supported
+// by this tool. Unsupported remotes are skipped during configuration setup.
+func (r remote) Supported() bool {
+	_, err := r.FetchRefspec()
+	return err == nil
+}
+
 type remotes map[string]remote
 
-func newRemotes(repos []repository) remotes {
+func newRemotes(ctx context.Context, repos []repository) remotes {
 	remotes := make(remotes)
 	for _, repo := range repos {
 		r := remote{
@@ -88,7 +121,12 @@ func newRemotes(repos []repository) remotes {
 		if repo.DefaultBranchRef != nil {
 			r.Head = path.Join("refs/remotes/", r.Name, strings.TrimPrefix(repo.DefaultBranchRef.Prefix, "refs/"), repo.DefaultBranchRef.Name)
 		}
-		remotes[r.Name] = r
+		if r.Supported() {
+			remotes[r.Name] = r
+		} else {
+			cmd := commandFrom(ctx)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Skipping unsupported repo %s\n", r.Name)
+		}
 	}
 	return remotes
 }

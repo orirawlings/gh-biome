@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -39,7 +40,46 @@ var (
 		Name:     "github.com/foo/headless",
 		FetchURL: "https://github.com/foo/headless.git",
 	}
+	dotPrefixRemote = remote{
+		Name:     "github.com/foo/.github",
+		FetchURL: "https://github.com/foo/.github.git",
+		Head:     "refs/remotes/github.com/foo/.github/heads/main",
+	}
 )
+
+func init() {
+	addRemotesCmd.SetContext(context.Background())
+	pushInContext(addRemotesCmd)
+}
+
+func TestFetchRefspec(t *testing.T) {
+	// remotes with a vaild fetch refspec
+	for _, r := range []remote{
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
+	} {
+		t.Run(r.Name, func(t *testing.T) {
+			_, err := r.FetchRefspec()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+	// remotes with an invaild fetch refspec
+	for _, r := range []remote{
+		dotPrefixRemote,
+	} {
+		t.Run(r.Name, func(t *testing.T) {
+			_, err := r.FetchRefspec()
+			if err == nil {
+				t.Errorf("expected error, but was nil")
+			}
+		})
+	}
+}
 
 func TestRemotes(t *testing.T) {
 	saved := byName([]remote{
@@ -48,6 +88,7 @@ func TestRemotes(t *testing.T) {
 		disabledRemote,
 		lockedRemote,
 		headlessRemote,
+		dotPrefixRemote,
 	})
 	var b bytes.Buffer
 	saved.save(&b)
@@ -65,7 +106,9 @@ func TestRemotes(t *testing.T) {
 }
 
 func TestNewRemotes(t *testing.T) {
-	built := newRemotes([]repository{
+	ctx := addRemotesCmd.Context()
+
+	built := newRemotes(ctx, []repository{
 		{
 			URL: "https://github.com/foo/bar",
 			DefaultBranchRef: &ref{
@@ -100,6 +143,13 @@ func TestNewRemotes(t *testing.T) {
 		{
 			URL: "https://github.com/foo/headless",
 		},
+		{
+			URL: "https://github.com/foo/.github",
+			DefaultBranchRef: &ref{
+				Name:   "main",
+				Prefix: "refs/heads/",
+			},
+		},
 	})
 	expected := byName([]remote{
 		barRemote,
@@ -119,6 +169,8 @@ func TestNewRemotes(t *testing.T) {
 }
 
 func TestSetHeads(t *testing.T) {
+	ctx := addRemotesCmd.Context()
+
 	repo, commitID := tempGitRepo(t)
 	if err := os.Chdir(repo); err != nil {
 		t.Fatalf("could not change directory to %s: %v", repo, err)
@@ -131,7 +183,7 @@ func TestSetHeads(t *testing.T) {
 
 	head := "refs/remotes/github.com/orirawlings/gh-ubergit/HEAD"
 
-	remotes := newRemotes([]repository{
+	remotes := newRemotes(ctx, []repository{
 		{
 			URL: "https://github.com/orirawlings/gh-ubergit",
 			DefaultBranchRef: &ref{
@@ -149,7 +201,7 @@ func TestSetHeads(t *testing.T) {
 	if err := exec.Command("git", "update-ref", aNewMainRef, commitID).Run(); err != nil {
 		t.Fatalf("could not update-ref %q to %q: %v", aNewMainRef, commitID, err)
 	}
-	remotes = newRemotes([]repository{
+	remotes = newRemotes(ctx, []repository{
 		{
 			URL: "https://github.com/orirawlings/gh-ubergit",
 			DefaultBranchRef: &ref{
@@ -163,7 +215,7 @@ func TestSetHeads(t *testing.T) {
 	}
 	checkLooseSymbolicRef(t, head, aNewMainRef)
 
-	remotes = newRemotes([]repository{
+	remotes = newRemotes(ctx, []repository{
 		{
 			URL: "https://github.com/orirawlings/gh-ubergit",
 		},
