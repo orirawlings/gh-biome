@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -41,7 +42,7 @@ var addRemotesEditorCmd = &cobra.Command{
 		config.NewDecoder(configFile).Decode(cfg)
 
 		// merge desired remotes data with current git config
-		updateConfig(cfg, remotes)
+		updateConfig(cmd.Context(), cfg, remotes)
 
 		// save git config
 		w, err := os.Create(configPath)
@@ -53,14 +54,21 @@ var addRemotesEditorCmd = &cobra.Command{
 	},
 }
 
-func updateConfig(cfg *config.Config, remotes map[string]remote) {
+func updateConfig(ctx context.Context, cfg *config.Config, remotes map[string]remote) {
 	for _, r := range remotes {
+		refspec, err := r.FetchRefspec()
+		if err != nil {
+			cmd := commandFrom(ctx)
+			fmt.Fprintf(cmd.OutOrStdout(), "Skipping configuring %s: %v", r.Name, err)
+			cfg.RemoveSubsection("remote", r.Name)
+			continue
+		}
 		if r.Disabled {
 			cfg.RemoveSubsection("remote", r.Name)
 			continue
 		}
 		cfg.SetOption("remote", r.Name, "url", r.FetchURL)
-		cfg.SetOption("remote", r.Name, "fetch", fmt.Sprintf("+refs/*:refs/remotes/%s/*", r.Name))
+		cfg.SetOption("remote", r.Name, "fetch", refspec)
 		cfg.SetOption("remote", r.Name, "archived", strconv.FormatBool(r.Archived))
 		cfg.SetOption("remote", r.Name, "tagOpt", "--no-tags")
 	}

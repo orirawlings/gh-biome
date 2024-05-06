@@ -1,13 +1,23 @@
 package cmd
 
 import (
+	"context"
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
+func init() {
+	addRemotesEditorCmd.SetContext(context.Background())
+	pushInContext(addRemotesEditorCmd)
+}
+
 func TestUpdateConfig(t *testing.T) {
+	ctx := addRemotesEditorCmd.Context()
+
 	cfg := config.New()
 	remotes := byName([]remote{
 		barRemote,
@@ -15,8 +25,9 @@ func TestUpdateConfig(t *testing.T) {
 		disabledRemote,
 		lockedRemote,
 		headlessRemote,
+		dotPrefixRemote,
 	})
-	updateConfig(cfg, remotes)
+	updateConfig(ctx, cfg, remotes)
 	for _, r := range remotes {
 		if r.Disabled {
 			if cfg.Section("remote").HasSubsection(r.Name) {
@@ -24,8 +35,14 @@ func TestUpdateConfig(t *testing.T) {
 			}
 			continue
 		}
-		if !cfg.Section("remote").HasSubsection(r.Name) {
-			t.Errorf("missing sub-section: %q", "remote."+r.Name)
+		if r.Supported() {
+			if !cfg.Section("remote").HasSubsection(r.Name) {
+				t.Errorf("missing sub-section: %q", "remote."+r.Name)
+			}
+		} else {
+			if cfg.Section("remote").HasSubsection(r.Name) {
+				t.Errorf("unexpected sub-section, expected this remote to be skipped during configuration: %q", "remote."+r.Name)
+			}
 		}
 	}
 }
@@ -37,6 +54,7 @@ func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 		disabledRemote,
 		lockedRemote,
 		headlessRemote,
+		dotPrefixRemote,
 	})
 
 	f, err := os.CreateTemp("", "")
@@ -72,6 +90,7 @@ func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 	defer configFile.Close()
 	cfg := config.New()
 	config.NewDecoder(configFile).Decode(cfg)
+
 	for _, r := range remotes {
 		if r.Disabled {
 			if cfg.Section("remote").HasSubsection(r.Name) {
@@ -79,8 +98,47 @@ func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 			}
 			continue
 		}
-		if !cfg.Section("remote").HasSubsection(r.Name) {
-			t.Errorf("missing sub-section: %q", "remote."+r.Name)
+		if r.Supported() {
+			if !cfg.Section("remote").HasSubsection(r.Name) {
+				t.Errorf("missing sub-section: %q", "remote."+r.Name)
+			}
+		} else {
+			if cfg.Section("remote").HasSubsection(r.Name) {
+				t.Errorf("unexpected sub-section, expected this remote to be skipped during configuration: %q", "remote."+r.Name)
+			}
+		}
+	}
+
+	// include config file in temporary git repo and ensure remote configs are valid
+	repo, _ := tempGitRepo(t)
+	cmd := exec.Command("git", "-C", repo, "config", "include.path", gitconfig.Name())
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Errorf("could not include test config in temp repo: %v\n%s", err, string(out))
+	}
+	cmd = exec.Command("git", "-C", repo, "remote", "show")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Errorf("could not list remotes in temp repo: %v\n%s", err, string(out))
+	}
+	var actualRemotes []string
+	for _, r := range strings.Split(string(out), "\n") {
+		r := strings.TrimSpace(r)
+		if len(r) > 0 {
+			actualRemotes = append(actualRemotes, r)
+		}
+	}
+	expectedRemotes := byName([]remote{
+		barRemote,
+		archivedRemote,
+		headlessRemote,
+	})
+	if len(expectedRemotes) != len(actualRemotes) {
+		t.Errorf("expected %d remotes to be configured on temp git repo, but was %d", len(expectedRemotes), len(actualRemotes))
+	}
+	for _, r := range actualRemotes {
+		if _, ok := expectedRemotes[r]; !ok {
+			t.Errorf("found unexpected remote configured on temp git repo: %s", r)
 		}
 	}
 }
