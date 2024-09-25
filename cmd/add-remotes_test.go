@@ -176,16 +176,16 @@ func TestSetHeads(t *testing.T) {
 		t.Fatalf("could not change directory to %s: %v", repo, err)
 	}
 
-	mainRef := "refs/remotes/github.com/orirawlings/gh-ubergit/heads/main"
+	mainRef := "refs/remotes/github.com/orirawlings/gh-biome/heads/main"
 	if err := exec.Command("git", "update-ref", mainRef, commitID).Run(); err != nil {
 		t.Fatalf("could not update-ref %q to %q: %v", mainRef, commitID, err)
 	}
 
-	head := "refs/remotes/github.com/orirawlings/gh-ubergit/HEAD"
+	head := "refs/remotes/github.com/orirawlings/gh-biome/HEAD"
 
 	remotes := newRemotes(ctx, []repository{
 		{
-			URL: "https://github.com/orirawlings/gh-ubergit",
+			URL: "https://github.com/orirawlings/gh-biome",
 			DefaultBranchRef: &ref{
 				Name:   "main",
 				Prefix: "refs/heads/",
@@ -197,13 +197,13 @@ func TestSetHeads(t *testing.T) {
 	}
 	checkLooseSymbolicRef(t, head, mainRef)
 
-	aNewMainRef := "refs/remotes/github.com/orirawlings/gh-ubergit/heads/aNewMainBranch"
+	aNewMainRef := "refs/remotes/github.com/orirawlings/gh-biome/heads/aNewMainBranch"
 	if err := exec.Command("git", "update-ref", aNewMainRef, commitID).Run(); err != nil {
 		t.Fatalf("could not update-ref %q to %q: %v", aNewMainRef, commitID, err)
 	}
 	remotes = newRemotes(ctx, []repository{
 		{
-			URL: "https://github.com/orirawlings/gh-ubergit",
+			URL: "https://github.com/orirawlings/gh-biome",
 			DefaultBranchRef: &ref{
 				Name:   "aNewMainBranch",
 				Prefix: "refs/heads/",
@@ -217,7 +217,7 @@ func TestSetHeads(t *testing.T) {
 
 	remotes = newRemotes(ctx, []repository{
 		{
-			URL: "https://github.com/orirawlings/gh-ubergit",
+			URL: "https://github.com/orirawlings/gh-biome",
 		},
 	})
 	if err := setHeads("test set heads", remotes); err != nil {

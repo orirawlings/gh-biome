@@ -9,12 +9,16 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ubergit",
-	Short: "Manage a local git repository with many disjoint commit graphs fetched from many independent remotes.",
+	Use:   "biome",
+	Short: "Store many git repos fetched from independent remotes in a single local git repo.",
 	Long: `
-Manage a local git repository with many disjoint commit graphs fetched from many
-independent remotes. This allows all git objects from all the repos to be stored
-in a common local git database for bulk analysis and queries.`,
+Store many git repos fetched from independent remotes in a single local git
+repo, a.k.a. a "git biome". By storing all git objects and references from
+many repos in a common database, we enable fast bulk analysis and querying
+across all repos.
+
+This tool helps manage the initialization, configuration, and maintenance of
+the local git biome repo.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		pushInContext(cmd)
 	},

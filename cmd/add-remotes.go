@@ -53,7 +53,7 @@ from any reference on the remote.`,
 		}
 
 		// invoke git config editor to add remote configs
-		os.Setenv("GIT_EDITOR", fmt.Sprintf("gh ubergit add-remotes-editor %s", f.Name()))
+		os.Setenv("GIT_EDITOR", fmt.Sprintf("gh biome add-remotes-editor %s", f.Name()))
 		gitConfigCmd := exec.Command("git", "config", "--edit")
 		gitConfigCmd.Stderr = cmd.ErrOrStderr()
 		gitConfigCmd.Stdout = cmd.OutOrStdout()

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/orirawlings/gh-ubergit/cmd"
+	"github.com/orirawlings/gh-biome/cmd"
 )
 
 func main() {

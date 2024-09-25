@@ -1,4 +1,4 @@
-module github.com/orirawlings/gh-ubergit
+module github.com/orirawlings/gh-biome
 
 go 1.22.5
 
