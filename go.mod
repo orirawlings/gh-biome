@@ -1,6 +1,6 @@
 module github.com/orirawlings/gh-biome
 
-go 1.22.5
+go 1.23.2
 
 require (
 	github.com/cli/go-gh/v2 v2.9.0
