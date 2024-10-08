@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/orirawlings/gh-biome/internal/config"
 )
 
 func init() {
@@ -14,29 +16,30 @@ func init() {
 }
 
 func TestInitCmd_Execute(t *testing.T) {
-	dir := t.TempDir()
-	defer execute(t, "git", "-C", dir, "maintenance", "unregister")
+	path := t.TempDir()
+	defer execute(t, "git", "-C", path, "maintenance", "unregister")
 	rootCmd.SetArgs([]string{
 		"init",
-		dir,
+		path,
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command: %v", err)
 	}
-	execute(t, "git", "-C", dir, "fsck")
-	if refFormat := strings.TrimSpace(execute(t, "git", "-C", dir, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
+	execute(t, "git", "-C", path, "fsck")
+	if refFormat := strings.TrimSpace(execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
 		t.Errorf("expected reftable format for references, but was %q", refFormat)
 	}
-	if v := getGitConfig(t, dir, biomeVersionKey); v != biomeV1 {
-		t.Errorf("expected %s %q, was %q", biomeVersionKey, biomeV1, v)
+	c := config.New(path)
+	if err := c.Validate(); err != nil {
+		t.Errorf("biome initialized with invalid configuration: %v", err)
 	}
-	if fetchParallel := getGitConfig(t, dir, "fetch.parallel"); fetchParallel != "0" {
+	if fetchParallel := getGitConfig(t, path, "fetch.parallel"); fetchParallel != "0" {
 		t.Errorf("expected parallel fetch to be enabled, but was: %q", fetchParallel)
 	}
-	if autoMaintenanceEnabled := getGitConfig(t, dir, "maintenance.auto"); autoMaintenanceEnabled != "false" {
+	if autoMaintenanceEnabled := getGitConfig(t, path, "maintenance.auto"); autoMaintenanceEnabled != "false" {
 		t.Errorf("expected auto maintenance to be disabled, but was not")
 	}
-	if maintenanceStrategy := getGitConfig(t, dir, "maintenance.strategy"); maintenanceStrategy != "incremental" {
+	if maintenanceStrategy := getGitConfig(t, path, "maintenance.strategy"); maintenanceStrategy != "incremental" {
 		t.Errorf("expected incremental maintenance strategy, but was: %q", maintenanceStrategy)
 	}
 }
