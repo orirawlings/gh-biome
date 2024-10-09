@@ -2,65 +2,64 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 )
 
 const (
-	// biomeVersionKey is a git config key that indicates what version of biome
+	// versionKey is a git config key that indicates what version of biome
 	// configuration settings are used in the repo.
-	biomeVersionKey = "biome.version"
+	versionKey = "biome.version"
 
-	// biomeV1 is the first version of biome configuration settings tha are used
-	// in a repo.
-	biomeV1 = "1"
+	// v1 is the first version of biome configuration schema used in a git repo.
+	v1 = "1"
+
 )
 
 var (
-	// errBiomeVersionNotSet indicates that a git repository has not been
-	// initialized as a git biome
-	errBiomeVersionNotSet = errors.New("biome config version not set")
+	// errVersionNotSet indicates that a git repository has not been
+	// initialized as a git biome.
+	errVersionNotSet = errors.New("biome config version not set")
 )
 
-// AssertBiomeVersion returns true if the git repository at the given path is using the given version of biome configuration.
-func AssertBiomeVersion(path, version string) (bool, error) {
-	cmd := exec.Command("git", "-C", path, "config", "get", "--local", biomeVersionKey)
-	out, err := cmd.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			// the config key is unset
-			return false, nil
-		}
-		return false, fmt.Errorf("could not %q: %w", cmd.String(), err)
-	}
-	return string(bytes.TrimSpace(out)) == version, nil
-}
-
+// Config provides a way to store and retrieve configuration settings for the
+// git biome.
 type Config interface {
-	Init() error
-	Validate() error
+	// Init initializes the git biome repository to store configuration settings
+	// with the current biome configuration schema version.
+	Init(context.Context) error
+
+	// Validate that the git biome repository is using the expected biome
+	// configuration schema version.
+	Validate(context.Context) error
 }
 
+// config provides an implementation of Config that is backed by local git
+// config settings in a git biome repository.
 type config struct {
 	path string
 }
 
+// New create a new Config, backed by local git config settings for the git
+// biome repository at the given file path.
 func New(path string) Config {
 	return &config{
 		path: path,
 	}
 }
 
-func (c *config) Init() error {
-	switch err := c.Validate(); err {
+// Init initializes the git biome repository to store configuration settings
+// with the current biome configuration schema version.
+func (c *config) Init(ctx context.Context) error {
+	switch err := c.Validate(ctx); err {
 	case nil:
 		// already initialized
 		return nil
-	case errBiomeVersionNotSet:
+	case errVersionNotSet:
 		// initialize
-		if err := c.set(biomeVersionKey, biomeV1); err != nil {
+		if err := c.set(ctx, versionKey, v1); err != nil {
 			return fmt.Errorf("could not initialize biome config: %w", err)
 		}
 		return nil
@@ -70,30 +69,34 @@ func (c *config) Init() error {
 	}
 }
 
-func (c *config) Validate() error {
-	version, err := c.get(biomeVersionKey)
+// Validate that the git biome repository is using the expected biome
+// configuration schema version.
+func (c *config) Validate(ctx context.Context) error {
+	version, err := c.get(ctx, versionKey)
 	if err != nil {
 		return fmt.Errorf("could not assert biome config version: %w", err)
 	}
 	if version == "" {
-		return errBiomeVersionNotSet
+		return errVersionNotSet
 	}
-	if version != biomeV1 {
-		return fmt.Errorf("unexpected biome config version, expected: %q was: %q", biomeV1, version)
-	}
-	return nil
-}
-
-func (c *config) set(key, value string) error {
-	cmd := exec.Command("git", "-C", c.path, "config", "set", "--local", key, value)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("could not %q: %w", cmd.String(), err)
+	if version != v1 {
+		return fmt.Errorf("unexpected biome config version, expected: %q was: %q", v1, version)
 	}
 	return nil
 }
 
-func (c *config) get(key string) (string, error) {
-	cmd := exec.Command("git", "-C", c.path, "config", "get", "--local", key)
+func (c *config) set(ctx context.Context, key, value string, options ...string) error {
+	args := append([]string{"-C", c.path, "config", "set", "--local"}, options...)
+	args = append(args, key, value)
+	cmd := exec.CommandContext(ctx, "git", args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("could not %q: %w: %s", cmd.String(), err, out)
+	}
+	return nil
+}
+
+func (c *config) get(ctx context.Context, key string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", c.path, "config", "get", "--local", key)
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError

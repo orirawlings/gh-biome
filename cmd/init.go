@@ -5,6 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/orirawlings/gh-biome/internal/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -28,14 +29,16 @@ Register the git repo for incremental maintenance and starts the maintenance sch
 			path = args[0]
 		}
 
+		ctx := cmd.Context()
+
 		// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
-		gitInitCmd := exec.Command("git", "init", "--bare", "--ref-format=reftable", path)
+		gitInitCmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", path)
 		if out, err := gitInitCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd.String(), err, out)
 		}
 
 		c := config.New(path)
-		if err := c.Init(); err != nil {
+		if err := c.Init(ctx); err != nil {
 			return err
 		}
 

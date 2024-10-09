@@ -1,87 +1,64 @@
 package config
 
 import (
-	"errors"
-	"os/exec"
+	"context"
 	"testing"
+
+	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
 func TestConfig_Init(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("bare repo", func(t *testing.T) {
-		path := newRepo(t)
-		c := New(path)
-		if err := c.Init(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		validate(t, c, true)
+		c := New(testutil.TempRepo(t))
+		testutil.Check(t, c.Init(ctx))
+		validate(t, ctx, c, true)
 
 		// reinitialization should succeed
-		if err := c.Init(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		validate(t, c, true)
+		testutil.Check(t, c.Init(ctx))
+		validate(t, ctx, c, true)
 	})
 
 	t.Run("repo with bad biome version", func(t *testing.T) {
-		path := newRepo(t)
-		_ = execute(t, "git", "-C", path, "config", "set", "--local", biomeVersionKey, "foobar")
+		path := testutil.TempRepo(t)
+		testutil.Execute(t, "git", "-C", path, "config", "set", "--local", versionKey, "foobar")
 		c := New(path)
-		if err := c.Init(); err == nil {
+		if err := c.Init(ctx); err == nil {
 			t.Errorf("expected initialization to fail, but did not")
 		}
 	})
 }
 
 func TestConfig_Validate(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("newly initialized biome", func(t *testing.T) {
-		path := newRepo(t)
-		c := New(path)
-		validate(t, c, false)
-		if err := c.Init(); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		validate(t, c, true)
+		c := New(testutil.TempRepo(t))
+		validate(t, ctx, c, false)
+		testutil.Check(t, c.Init(ctx))
+		validate(t, ctx, c, true)
 	})
 
 	t.Run("repo with bad biome version", func(t *testing.T) {
-		path := newRepo(t)
-		_ = execute(t, "git", "-C", path, "config", "set", "--local", biomeVersionKey, "foobar")
+		path := testutil.TempRepo(t)
+		testutil.Execute(t, "git", "-C", path, "config", "set", "--local", versionKey, "foobar")
 		c := New(path)
-		validate(t, c, false)
+		validate(t, ctx, c, false)
 	})
 
 	t.Run("non-repo", func(t *testing.T) {
 		path := t.TempDir()
 		c := New(path)
-		validate(t, c, false)
+		validate(t, ctx, c, false)
 	})
 }
 
-func validate(t *testing.T, c Config, expectedValid bool) {
-	err := c.Validate()
+func validate(t *testing.T, ctx context.Context, c Config, expectedValid bool) {
+	err := c.Validate(ctx)
 	if expectedValid && err != nil {
 		t.Errorf("unexpected error: %v", err)
 	} else if !expectedValid && err == nil {
 		t.Errorf("expected biome config to be invalid, but passed validation")
 	}
-}
-
-func newRepo(t *testing.T) string {
-	path := t.TempDir()
-	_ = execute(t, "git", "-C", path, "init", "--bare")
-	return path
-}
-
-func execute(t *testing.T, command ...string) string {
-	cmd := exec.Command(command[0], command[1:]...)
-	out, err := cmd.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			t.Errorf("unexpected error exec'ing %q: %v\n\nstdout:\n%s\n\nstderr:\n%s\n", cmd.String(), err, out, exitErr.Stderr)
-		} else {
-			t.Errorf("unexpected error exec'ing %q: %v", cmd.String(), err)
-		}
-	}
-	return string(out)
 }

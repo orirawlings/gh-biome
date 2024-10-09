@@ -30,7 +30,7 @@ func TestInitCmd_Execute(t *testing.T) {
 		t.Errorf("expected reftable format for references, but was %q", refFormat)
 	}
 	c := config.New(path)
-	if err := c.Validate(); err != nil {
+	if err := c.Validate(context.Background()); err != nil {
 		t.Errorf("biome initialized with invalid configuration: %v", err)
 	}
 	if fetchParallel := getGitConfig(t, path, "fetch.parallel"); fetchParallel != "0" {
