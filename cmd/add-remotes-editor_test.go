@@ -20,12 +20,12 @@ func TestUpdateConfig(t *testing.T) {
 
 	cfg := config.New()
 	remotes := byName([]remote{
-		barRemote,
-		archivedRemote,
-		disabledRemote,
-		lockedRemote,
-		headlessRemote,
-		dotPrefixRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		disabledLegacyRemote,
+		lockedLegacyRemote,
+		headlessLegacyRemote,
+		dotPrefixLegacyRemote,
 	})
 	updateConfig(ctx, cfg, remotes)
 	for _, r := range remotes {
@@ -49,12 +49,12 @@ func TestUpdateConfig(t *testing.T) {
 
 func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 	remotes := byName([]remote{
-		barRemote,
-		archivedRemote,
-		disabledRemote,
-		lockedRemote,
-		headlessRemote,
-		dotPrefixRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		disabledLegacyRemote,
+		lockedLegacyRemote,
+		headlessLegacyRemote,
+		dotPrefixLegacyRemote,
 	})
 
 	f, err := os.CreateTemp("", "")
@@ -129,9 +129,9 @@ func TestAddRemotesEditorCmd_Execute(t *testing.T) {
 		}
 	}
 	expectedRemotes := byName([]remote{
-		barRemote,
-		archivedRemote,
-		headlessRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		headlessLegacyRemote,
 	})
 	if len(expectedRemotes) != len(actualRemotes) {
 		t.Errorf("expected %d remotes to be configured on temp git repo, but was %d", len(expectedRemotes), len(actualRemotes))

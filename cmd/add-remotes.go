@@ -11,8 +11,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/cli/go-gh/v2/pkg/api"
-	graphql "github.com/cli/shurcooL-graphql"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +28,8 @@ fetch refspec. All references on the remote are retrieved and stored under
 refs/remotes/<remote-name>/, including refs/remotes/<remote-name>/tags/ and
 refs/remotes/<remote-name>/pull/. This enables analyses of all objects reachable
 from any reference on the remote.`,
-	Args: cobra.MinimumNArgs(1),
+	Deprecated: "Use the `add` sub-command instead",
+	Args:       cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// load repos for given owners
 		repos, err := getRepos(args)
@@ -155,65 +154,6 @@ func (rs *remotes) load(r io.Reader) error {
 		(*rs)[r.Name] = r
 	}
 	return nil
-}
-
-type ref struct {
-	Name   string
-	Prefix string
-}
-
-type repository struct {
-	IsDisabled       bool
-	IsArchived       bool
-	IsLocked         bool
-	URL              string `graphql:"url"`
-	DefaultBranchRef *ref
-}
-
-func getRepos(args []string) ([]repository, error) {
-	var repos []repository
-	for _, hostAndOwner := range args {
-		// parse host and owner
-		hostAndOwner, _ = strings.CutPrefix(hostAndOwner, "http://")
-		hostAndOwner, _ = strings.CutPrefix(hostAndOwner, "https://")
-		parts := strings.SplitN(hostAndOwner, "/", 2)
-		host, owner := parts[0], parts[1]
-
-		// query API
-		opts := api.ClientOptions{
-			Host: host,
-		}
-		client, err := api.NewGraphQLClient(opts)
-		if err != nil {
-			return nil, fmt.Errorf("could not create API client: %s: %w", host, err)
-		}
-		var query struct {
-			RepositoryOwner struct {
-				Repositories struct {
-					Nodes    []repository
-					PageInfo struct {
-						HasNextPage bool
-						EndCursor   string
-					}
-				} `graphql:"repositories(first: 100, after: $endCursor)"`
-			} `graphql:"repositoryOwner(login: $owner)"`
-		}
-		variables := map[string]interface{}{
-			"owner":     graphql.String(owner),
-			"endCursor": (*graphql.String)(nil),
-		}
-		for {
-			if err := client.Query("RepositoryOwner", &query, variables); err != nil {
-				return repos, fmt.Errorf("could not query repos for %s/%s: %w", host, owner, err)
-			}
-			repos = append(repos, query.RepositoryOwner.Repositories.Nodes...)
-			if !query.RepositoryOwner.Repositories.PageInfo.HasNextPage {
-				break
-			}
-			variables["endCursor"] = graphql.String(query.RepositoryOwner.Repositories.PageInfo.EndCursor)
-		}
-	}
-	return repos, nil
 }
 
 // setHeads will set HEADs for each remote, approximating

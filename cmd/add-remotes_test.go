@@ -13,34 +13,34 @@ import (
 )
 
 var (
-	barRemote = remote{
+	barLegacyRemote = remote{
 		Name:     "github.com/foo/bar",
 		FetchURL: "https://github.com/foo/bar.git",
 		Head:     "refs/remotes/github.com/foo/bar/heads/main",
 	}
-	archivedRemote = remote{
+	archivedLegacyRemote = remote{
 		Name:     "github.com/foo/archived",
 		FetchURL: "https://github.com/foo/archived.git",
 		Archived: true,
 		Head:     "refs/remotes/github.com/foo/archived/heads/master",
 	}
-	disabledRemote = remote{
+	disabledLegacyRemote = remote{
 		Name:     "github.com/foo/disabled",
 		FetchURL: "https://github.com/foo/disabled.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/foo/disabled/heads/main",
 	}
-	lockedRemote = remote{
+	lockedLegacyRemote = remote{
 		Name:     "github.com/foo/locked",
 		FetchURL: "https://github.com/foo/locked.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/foo/locked/heads/main",
 	}
-	headlessRemote = remote{
+	headlessLegacyRemote = remote{
 		Name:     "github.com/foo/headless",
 		FetchURL: "https://github.com/foo/headless.git",
 	}
-	dotPrefixRemote = remote{
+	dotPrefixLegacyRemote = remote{
 		Name:     "github.com/foo/.github",
 		FetchURL: "https://github.com/foo/.github.git",
 		Head:     "refs/remotes/github.com/foo/.github/heads/main",
@@ -55,11 +55,11 @@ func init() {
 func TestFetchRefspec(t *testing.T) {
 	// remotes with a vaild fetch refspec
 	for _, r := range []remote{
-		barRemote,
-		archivedRemote,
-		disabledRemote,
-		lockedRemote,
-		headlessRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		disabledLegacyRemote,
+		lockedLegacyRemote,
+		headlessLegacyRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {
 			_, err := r.FetchRefspec()
@@ -70,7 +70,7 @@ func TestFetchRefspec(t *testing.T) {
 	}
 	// remotes with an invaild fetch refspec
 	for _, r := range []remote{
-		dotPrefixRemote,
+		dotPrefixLegacyRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {
 			_, err := r.FetchRefspec()
@@ -83,12 +83,12 @@ func TestFetchRefspec(t *testing.T) {
 
 func TestRemotes(t *testing.T) {
 	saved := byName([]remote{
-		barRemote,
-		archivedRemote,
-		disabledRemote,
-		lockedRemote,
-		headlessRemote,
-		dotPrefixRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		disabledLegacyRemote,
+		lockedLegacyRemote,
+		headlessLegacyRemote,
+		dotPrefixLegacyRemote,
 	})
 	var b bytes.Buffer
 	saved.save(&b)
@@ -152,11 +152,11 @@ func TestNewRemotes(t *testing.T) {
 		},
 	})
 	expected := byName([]remote{
-		barRemote,
-		archivedRemote,
-		disabledRemote,
-		lockedRemote,
-		headlessRemote,
+		barLegacyRemote,
+		archivedLegacyRemote,
+		disabledLegacyRemote,
+		lockedLegacyRemote,
+		headlessLegacyRemote,
 	})
 	if len(expected) != len(built) {
 		t.Errorf("remote data has unexpected number of entries: expected %d, was %d", len(expected), len(built))
