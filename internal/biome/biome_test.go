@@ -1,4 +1,4 @@
-package config
+package biome
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
-func TestConfig_Init(t *testing.T) {
+func TestBiome_Init(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("bare repo", func(t *testing.T) {
@@ -30,7 +30,7 @@ func TestConfig_Init(t *testing.T) {
 	})
 }
 
-func TestConfig_Validate(t *testing.T) {
+func TestBiome_Validate(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("newly initialized biome", func(t *testing.T) {
@@ -54,11 +54,11 @@ func TestConfig_Validate(t *testing.T) {
 	})
 }
 
-func validate(t *testing.T, ctx context.Context, c Config, expectedValid bool) {
+func validate(t *testing.T, ctx context.Context, c Biome, expectedValid bool) {
 	err := c.Validate(ctx)
 	if expectedValid && err != nil {
 		t.Errorf("unexpected error: %v", err)
 	} else if !expectedValid && err == nil {
-		t.Errorf("expected biome config to be invalid, but passed validation")
+		t.Errorf("expected biome to be invalid, but passed validation")
 	}
 }

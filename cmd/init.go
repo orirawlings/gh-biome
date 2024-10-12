@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/orirawlings/gh-biome/internal/config"
+	"github.com/orirawlings/gh-biome/internal/biome"
 
 	"github.com/spf13/cobra"
 )
@@ -37,8 +37,8 @@ Register the git repo for incremental maintenance and starts the maintenance sch
 			return fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd.String(), err, out)
 		}
 
-		c := config.New(path)
-		if err := c.Init(ctx); err != nil {
+		b := biome.New(path)
+		if err := b.Init(ctx); err != nil {
 			return err
 		}
 

@@ -1,4 +1,4 @@
-package config
+package biome
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ const (
 
 	// v1 is the first version of biome configuration schema used in a git repo.
 	v1 = "1"
-
 )
 
 var (
@@ -24,9 +23,9 @@ var (
 	errVersionNotSet = errors.New("biome config version not set")
 )
 
-// Config provides a way to store and retrieve configuration settings for the
-// git biome.
-type Config interface {
+// Biome is a local git repository that aggregates the objects and references
+// of many other remote git repositories.
+type Biome interface {
 	// Init initializes the git biome repository to store configuration settings
 	// with the current biome configuration schema version.
 	Init(context.Context) error
@@ -36,30 +35,28 @@ type Config interface {
 	Validate(context.Context) error
 }
 
-// config provides an implementation of Config that is backed by local git
-// config settings in a git biome repository.
-type config struct {
+type biome struct {
 	path string
 }
 
 // New create a new Config, backed by local git config settings for the git
 // biome repository at the given file path.
-func New(path string) Config {
-	return &config{
+func New(path string) Biome {
+	return &biome{
 		path: path,
 	}
 }
 
 // Init initializes the git biome repository to store configuration settings
 // with the current biome configuration schema version.
-func (c *config) Init(ctx context.Context) error {
+func (c *biome) Init(ctx context.Context) error {
 	switch err := c.Validate(ctx); err {
 	case nil:
 		// already initialized
 		return nil
 	case errVersionNotSet:
 		// initialize
-		if err := c.set(ctx, versionKey, v1); err != nil {
+		if err := c.setConfig(ctx, versionKey, v1); err != nil {
 			return fmt.Errorf("could not initialize biome config: %w", err)
 		}
 		return nil
@@ -71,8 +68,8 @@ func (c *config) Init(ctx context.Context) error {
 
 // Validate that the git biome repository is using the expected biome
 // configuration schema version.
-func (c *config) Validate(ctx context.Context) error {
-	version, err := c.get(ctx, versionKey)
+func (c *biome) Validate(ctx context.Context) error {
+	version, err := c.getConfig(ctx, versionKey)
 	if err != nil {
 		return fmt.Errorf("could not assert biome config version: %w", err)
 	}
@@ -85,7 +82,7 @@ func (c *config) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (c *config) set(ctx context.Context, key, value string, options ...string) error {
+func (c *biome) setConfig(ctx context.Context, key, value string, options ...string) error {
 	args := append([]string{"-C", c.path, "config", "set", "--local"}, options...)
 	args = append(args, key, value)
 	cmd := exec.CommandContext(ctx, "git", args...)
@@ -95,7 +92,7 @@ func (c *config) set(ctx context.Context, key, value string, options ...string) 
 	return nil
 }
 
-func (c *config) get(ctx context.Context, key string) (string, error) {
+func (c *biome) getConfig(ctx context.Context, key string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", "-C", c.path, "config", "get", "--local", key)
 	out, err := cmd.Output()
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/orirawlings/gh-biome/internal/config"
+	"github.com/orirawlings/gh-biome/internal/biome"
 )
 
 func init() {
@@ -29,7 +29,7 @@ func TestInitCmd_Execute(t *testing.T) {
 	if refFormat := strings.TrimSpace(execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
 		t.Errorf("expected reftable format for references, but was %q", refFormat)
 	}
-	c := config.New(path)
+	c := biome.New(path)
 	if err := c.Validate(context.Background()); err != nil {
 		t.Errorf("biome initialized with invalid configuration: %v", err)
 	}
