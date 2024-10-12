@@ -2,63 +2,86 @@ package biome
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
-func TestBiome_Init(t *testing.T) {
+func TestInit(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("bare repo", func(t *testing.T) {
-		c := New(testutil.TempRepo(t))
-		testutil.Check(t, c.Init(ctx))
-		validate(t, ctx, c, true)
+	path := t.TempDir()
 
-		// reinitialization should succeed
-		testutil.Check(t, c.Init(ctx))
-		validate(t, ctx, c, true)
+	defer testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
+
+	t.Run("new biome", func(t *testing.T) {
+		_, err := Init(ctx, path)
+		testutil.Check(t, err)
+
+		testutil.Execute(t, "git", "-C", path, "fsck")
+		if refFormat := strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
+			t.Errorf("expected reftable format for references, but was %q", refFormat)
+		}
+		if fetchParallel := getGitConfig(t, path, "fetch.parallel"); fetchParallel != "0" {
+			t.Errorf("expected parallel fetch to be enabled, but was: %q", fetchParallel)
+		}
+		if autoMaintenanceEnabled := getGitConfig(t, path, "maintenance.auto"); autoMaintenanceEnabled != "false" {
+			t.Errorf("expected auto maintenance to be disabled, but was not")
+		}
+		if maintenanceStrategy := getGitConfig(t, path, "maintenance.strategy"); maintenanceStrategy != "incremental" {
+			t.Errorf("expected incremental maintenance strategy, but was: %q", maintenanceStrategy)
+		}
 	})
 
-	t.Run("repo with bad biome version", func(t *testing.T) {
+	t.Run("existing biome", func(t *testing.T) {
+		// assert that Init is idempotent
+		_, err := Init(ctx, path)
+		testutil.Check(t, err)
+	})
+
+	t.Run("existing repo with bad biome version", func(t *testing.T) {
 		path := testutil.TempRepo(t)
 		testutil.Execute(t, "git", "-C", path, "config", "set", "--local", versionKey, "foobar")
-		c := New(path)
-		if err := c.Init(ctx); err == nil {
+		if _, err := Init(ctx, path); err == nil {
 			t.Errorf("expected initialization to fail, but did not")
 		}
 	})
 }
 
-func TestBiome_Validate(t *testing.T) {
+func getGitConfig(t *testing.T, dir, key string) string {
+	return strings.TrimSpace(testutil.Execute(t, "git", "-C", dir, "config", "get", "--local", key))
+}
+
+func TestLoad(t *testing.T) {
+
 	ctx := context.Background()
 
 	t.Run("newly initialized biome", func(t *testing.T) {
-		c := New(testutil.TempRepo(t))
-		validate(t, ctx, c, false)
-		testutil.Check(t, c.Init(ctx))
-		validate(t, ctx, c, true)
+		path := t.TempDir()
+		_, err := Init(ctx, path)
+		testutil.Check(t, err)
+		load(t, ctx, path, true)
 	})
 
 	t.Run("repo with bad biome version", func(t *testing.T) {
 		path := testutil.TempRepo(t)
 		testutil.Execute(t, "git", "-C", path, "config", "set", "--local", versionKey, "foobar")
-		c := New(path)
-		validate(t, ctx, c, false)
+		load(t, ctx, path, false)
 	})
 
 	t.Run("non-repo", func(t *testing.T) {
 		path := t.TempDir()
-		c := New(path)
-		validate(t, ctx, c, false)
+		load(t, ctx, path, false)
 	})
 }
 
-func validate(t *testing.T, ctx context.Context, c Biome, expectedValid bool) {
-	err := c.Validate(ctx)
-	if expectedValid && err != nil {
+func load(t *testing.T, ctx context.Context, path string, shouldSucceed bool) Biome {
+	b, err := Load(ctx, path)
+	if shouldSucceed && err != nil {
 		t.Errorf("unexpected error: %v", err)
-	} else if !expectedValid && err == nil {
-		t.Errorf("expected biome to be invalid, but passed validation")
+	} else if !shouldSucceed && err == nil {
+		t.Errorf("expected biome to be invalid, but loaded successfully")
 	}
+	return b
 }

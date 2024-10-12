@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/orirawlings/gh-biome/internal/biome"
 
@@ -28,44 +27,10 @@ Register the git repo for incremental maintenance and starts the maintenance sch
 		if len(args) > 0 {
 			path = args[0]
 		}
-
-		ctx := cmd.Context()
-
-		// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
-		gitInitCmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", path)
-		if out, err := gitInitCmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd.String(), err, out)
+		if _, err := biome.Init(cmd.Context(), path); err != nil {
+			return fmt.Errorf("failed to initialize biome: %w", err)
 		}
-
-		b := biome.New(path)
-		if err := b.Init(ctx); err != nil {
-			return err
-		}
-
-		// fetch.parallel Specifies the maximal number of fetch operations to
-		// be run in parallel at a time (submodules, or remotes when the
-		// --multiple option of git-fetch(1) is in effect).
-		// A value of 0 will give some reasonable default. If unset, it
-		// defaults to 1.
-		if err := setGitConfig(path, "fetch.parallel", "0"); err != nil {
-			return err
-		}
-
-		maintenanceStartCmd := exec.Command("git", "-C", path, "maintenance", "start")
-		if _, err := maintenanceStartCmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("could not %q: %w", maintenanceStartCmd.String(), err)
-		}
-
-		return nil
+		_, err := fmt.Fprintf(cmd.OutOrStderr(), "git biome initialized in %s\n", path)
+		return err
 	},
-}
-
-// setGitConfig executes git-config in the repo at the given directory to assign
-// local configuration key/value pair.
-func setGitConfig(dir, key, value string) error {
-	cmd := exec.Command("git", "-C", dir, "config", "set", "--local", key, value)
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("could not %q: %w", cmd.String(), err)
-	}
-	return nil
 }
