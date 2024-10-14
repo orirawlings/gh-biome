@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "github.com/orirawlings/gh-biome/internal/config/protobuf";
+
+package config;
+
+// The greeting service definition.
+service Editor {
+  // Edits a git config file
+  rpc Edit (EditRequest) returns (Empty) {}
+}
+
+// The request message containing the git config file path to edit.
+message EditRequest {
+  string path = 1;
+}
+
+message Empty {}
