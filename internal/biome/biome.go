@@ -1,20 +1,37 @@
 package biome
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os/exec"
+	"slices"
+
+	"github.com/orirawlings/gh-biome/internal/config"
+	slicesutil "github.com/orirawlings/gh-biome/internal/util/slices"
 )
 
 const (
+	// section is the name of the git config section that holds top-level biome
+	// configuration settings.
+	section = "biome"
+
 	// versionKey is a git config key that indicates what version of biome
 	// configuration settings are used in the repo.
-	versionKey = "biome.version"
+	versionKey = section + ".version"
 
 	// v1 is the first version of biome configuration schema used in a git repo.
 	v1 = "1"
+
+	// ownersOpt is the git config section option key for listing GitHub
+	// repository owners that have been added to the biome.
+	ownersOpt = "owners"
+
+	// ownersKey is a git config key that lists which GitHub repository
+	// owners that have been added to the biome.
+	ownersKey = section + "." + ownersOpt
 )
 
 var (
@@ -28,16 +45,23 @@ var (
 
 // Biome is a local git repository that aggregates the objects and references
 // of many other remote git repositories.
-type Biome interface{}
+type Biome interface {
+	AddOwners(context.Context, []Owner) error
+	Owners(context.Context) ([]Owner, error)
+}
 
 type biome struct {
-	path string
+	path          string
+	editorOptions []config.EditorOption
 }
 
 // Init initializes a new git biome at the given filesystem directory path.
-func Init(ctx context.Context, path string) (Biome, error) {
+func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) {
 	b := &biome{
 		path: path,
+	}
+	for _, opt := range opts {
+		opt(b)
 	}
 	switch err := b.validate(ctx); err {
 	case nil:
@@ -79,9 +103,12 @@ func Init(ctx context.Context, path string) (Biome, error) {
 }
 
 // Load an existing git biome at the given filesystem directory path.
-func Load(ctx context.Context, path string) (Biome, error) {
+func Load(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) {
 	b := &biome{
 		path: path,
+	}
+	for _, opt := range opts {
+		opt(b)
 	}
 	return b, b.validate(ctx)
 }
@@ -109,6 +136,59 @@ func (b *biome) validate(ctx context.Context) error {
 	return nil
 }
 
+// AddOwners records that the given GitHub owners have joined the git biome. An
+// owner should be added to the biome before any of the owner's repositories
+// are added as remotes.
+func (b *biome) AddOwners(ctx context.Context, owners []Owner) error {
+	return b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
+		biomeSection := cfg.Section(section)
+
+		ownerRefs := slicesutil.SortedUnique(slices.Collect(func(yield func(string) bool) {
+			// stored owners
+			slices.Values(biomeSection.OptionAll(ownersOpt))(yield)
+
+			// new owners
+			for _, owner := range owners {
+				if !yield(owner.String()) {
+					return
+				}
+			}
+		}))
+
+		// clear stored owners
+		biomeSection.RemoveOption(ownersOpt)
+
+		// store all owners
+		for _, ownerRef := range ownerRefs {
+			biomeSection.AddOption(ownersOpt, ownerRef)
+		}
+
+		return true, nil
+	})
+}
+
+func (b *biome) Owners(ctx context.Context) ([]Owner, error) {
+	ownerRefs, err := b.getAllConfig(ctx, ownersKey)
+	if err != nil {
+		return nil, fmt.Errorf("could not read owners from biome config: %w", err)
+	}
+	var owners []Owner
+	var errs error
+	for _, ownerRef := range ownerRefs {
+		owner, err := ParseOwner(ownerRef)
+		if err != nil {
+			errs = errors.Join(errs, err)
+		} else {
+			owners = append(owners, owner)
+		}
+	}
+	return owners, errs
+}
+
+func (b *biome) editConfig(ctx context.Context, do func(context.Context, *config.Config) (bool, error)) error {
+	return config.NewEditor(b.path, b.editorOptions...).Edit(ctx, do)
+}
+
 func (b *biome) setConfig(ctx context.Context, key, value string, options ...string) error {
 	args := append([]string{"-C", b.path, "config", "set", "--local"}, options...)
 	args = append(args, key, value)
@@ -131,4 +211,33 @@ func (b *biome) getConfig(ctx context.Context, key string) (string, error) {
 		return "", fmt.Errorf("could not %q: %w", cmd.String(), err)
 	}
 	return string(bytes.TrimSpace(out)), nil
+}
+
+func (b *biome) getAllConfig(ctx context.Context, key string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", b.path, "config", "get", "--local", "--all", key)
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			// the config key is unset
+			return nil, nil
+		}
+		return nil, fmt.Errorf("could not %q: %w", cmd.String(), err)
+	}
+	s := bufio.NewScanner(bytes.NewReader(out))
+	return slices.Collect(func(yield func(string) bool) {
+		for s.Scan() {
+			if ok := yield(s.Text()); !ok {
+				break
+			}
+		}
+	}), s.Err()
+}
+
+type BiomeOption func(*biome)
+
+func EditorOptions(opts ...config.EditorOption) BiomeOption {
+	return func(b *biome) {
+		b.editorOptions = opts
+	}
 }

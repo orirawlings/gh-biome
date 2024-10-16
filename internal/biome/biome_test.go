@@ -2,9 +2,14 @@ package biome
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/orirawlings/gh-biome/internal/config"
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
@@ -16,8 +21,7 @@ func TestInit(t *testing.T) {
 	defer testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
 
 	t.Run("new biome", func(t *testing.T) {
-		_, err := Init(ctx, path)
-		testutil.Check(t, err)
+		initBiome(t, ctx, path, true)
 
 		testutil.Execute(t, "git", "-C", path, "fsck")
 		if refFormat := strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
@@ -36,16 +40,13 @@ func TestInit(t *testing.T) {
 
 	t.Run("existing biome", func(t *testing.T) {
 		// assert that Init is idempotent
-		_, err := Init(ctx, path)
-		testutil.Check(t, err)
+		initBiome(t, ctx, path, true)
 	})
 
 	t.Run("existing repo with bad biome version", func(t *testing.T) {
 		path := testutil.TempRepo(t)
 		testutil.Execute(t, "git", "-C", path, "config", "set", "--local", versionKey, "foobar")
-		if _, err := Init(ctx, path); err == nil {
-			t.Errorf("expected initialization to fail, but did not")
-		}
+		initBiome(t, ctx, path, false)
 	})
 }
 
@@ -59,8 +60,7 @@ func TestLoad(t *testing.T) {
 
 	t.Run("newly initialized biome", func(t *testing.T) {
 		path := t.TempDir()
-		_, err := Init(ctx, path)
-		testutil.Check(t, err)
+		initBiome(t, ctx, path, true)
 		load(t, ctx, path, true)
 	})
 
@@ -76,12 +76,123 @@ func TestLoad(t *testing.T) {
 	})
 }
 
-func load(t *testing.T, ctx context.Context, path string, shouldSucceed bool) Biome {
-	b, err := Load(ctx, path)
+func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed bool) Biome {
+	b, err := Init(ctx, path, biomeOptions(t)...)
 	if shouldSucceed && err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	} else if !shouldSucceed && err == nil {
-		t.Errorf("expected biome to be invalid, but loaded successfully")
+		t.Fatalf("expected error, but initialized successfully")
 	}
 	return b
+}
+
+func load(t testing.TB, ctx context.Context, path string, shouldSucceed bool) Biome {
+	b, err := Load(ctx, path, biomeOptions(t)...)
+	if shouldSucceed && err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	} else if !shouldSucceed && err == nil {
+		t.Fatalf("expected biome to be invalid, but loaded successfully")
+	}
+	return b
+}
+
+func TestBiome_Owners(t *testing.T) {
+	ctx := context.Background()
+	b := newBiome(t, ctx)
+	owners, err := b.Owners(ctx)
+	testutil.Check(t, err)
+	if len(owners) != 0 {
+		t.Errorf("expected zero owners in biome, but was: %d", len(owners))
+	}
+	addOwners(t, ctx, b, "github.com/orirawlings")
+	expectOwners(t, ctx, b, []Owner{
+		{
+			host: "github.com",
+			name: "orirawlings",
+		},
+	})
+	addOwners(t, ctx, b, "github.com/orirawlings", "github.com/kubernetes")
+	expectOwners(t, ctx, b, []Owner{
+		{
+			host: "github.com",
+			name: "kubernetes",
+		},
+		{
+			host: "github.com",
+			name: "orirawlings",
+		},
+	})
+	addOwners(t, ctx, b, "github.com/git", "github.com/cli")
+	expectOwners(t, ctx, b, []Owner{
+		{
+			host: "github.com",
+			name: "cli",
+		},
+		{
+			host: "github.com",
+			name: "git",
+		},
+		{
+			host: "github.com",
+			name: "kubernetes",
+		},
+		{
+			host: "github.com",
+			name: "orirawlings",
+		},
+	})
+	addOwners(t, ctx, b, "github.com/git", "github.com/cli")
+	expectOwners(t, ctx, b, []Owner{
+		{
+			host: "github.com",
+			name: "cli",
+		},
+		{
+			host: "github.com",
+			name: "git",
+		},
+		{
+			host: "github.com",
+			name: "kubernetes",
+		},
+		{
+			host: "github.com",
+			name: "orirawlings",
+		},
+	})
+}
+
+func newBiome(t testing.TB, ctx context.Context) Biome {
+	return initBiome(t, ctx, t.TempDir(), true)
+}
+
+func biomeOptions(t testing.TB) []BiomeOption {
+	_, thisFilePath, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not determine current source file path")
+	}
+	projectSourceDir := filepath.Join(filepath.Dir(thisFilePath), "../..")
+	biomePath := filepath.Join(t.TempDir(), "biome")
+	testutil.Execute(t, "go", "build", "-o", biomePath, projectSourceDir)
+	return []BiomeOption{
+		EditorOptions(config.HelperCommand(fmt.Sprintf("%s config-edit-helper", biomePath))),
+	}
+}
+
+func addOwners(t *testing.T, ctx context.Context, b Biome, ownerRefs ...string) {
+	var owners []Owner
+	for _, ownerRef := range ownerRefs {
+		owner, err := ParseOwner(ownerRef)
+		testutil.Check(t, err)
+		owners = append(owners, owner)
+	}
+	testutil.Check(t, b.AddOwners(ctx, owners))
+}
+
+func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) {
+	owners, err := b.Owners(ctx)
+	testutil.Check(t, err)
+	if !slices.Equal(owners, expected) {
+		t.Errorf("unexpected owners: wanted %v, was %v", expected, owners)
+	}
 }
