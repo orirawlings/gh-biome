@@ -15,8 +15,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
+type Config = config.Config
+
 type Editor interface {
-	Edit(context.Context, func(context.Context, *config.Config) (bool, error)) error
+	Edit(context.Context, func(context.Context, *Config) (bool, error)) error
 }
 
 type editor struct {
@@ -35,7 +37,7 @@ func NewEditor(repoPath string, opts ...EditorOption) Editor {
 	return &e
 }
 
-func (e *editor) Edit(ctx context.Context, do func(context.Context, *config.Config) (bool, error)) error {
+func (e *editor) Edit(ctx context.Context, do func(context.Context, *Config) (bool, error)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -127,7 +129,7 @@ func (e *editor) listener(ctx context.Context) (net.Listener, error) {
 	return (&net.ListenConfig{}).Listen(ctx, "unix", f.Name())
 }
 
-func (e *editor) load(path string) (*config.Config, error) {
+func (e *editor) load(path string) (*Config, error) {
 	configFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -137,7 +139,7 @@ func (e *editor) load(path string) (*config.Config, error) {
 	return cfg, config.NewDecoder(configFile).Decode(cfg)
 }
 
-func (e *editor) save(path string, cfg *config.Config) error {
+func (e *editor) save(path string, cfg *Config) error {
 	w, err := os.Create(path)
 	if err != nil {
 		return err
@@ -148,7 +150,13 @@ func (e *editor) save(path string, cfg *config.Config) error {
 
 type EditorOption func(*editor)
 
-func helperCommand(cmd string) EditorOption {
+// HelperCommand overrides the command forked by 'git config edit' that will
+// callback to the editor server. The command will be passed two arguments, the
+// unix socket to call the server and the temporary config file to edit
+// provided by 'git config edit'.
+//
+// Generally, this option will only be used during tests.
+func HelperCommand(cmd string) EditorOption {
 	return func(e *editor) {
 		e.helperCmd = cmd
 	}

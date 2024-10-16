@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing/format/config"
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
@@ -27,7 +26,7 @@ func TestEditor(t *testing.T) {
 		defer cancel()
 		path := testutil.TempRepo(t)
 		assertConfigNotSet(ctx, t, path, configKey)
-		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
+		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {
 			c.Section(section).SetOption(sectionKey, expectedValue)
 			return true, nil
 		})
@@ -41,7 +40,7 @@ func TestEditor(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
 		defer cancel()
 		path := testutil.TempRepo(t)
-		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
+		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {
 			c.Section(section).SetOption(sectionKey, expectedValue)
 			return false, nil
 		})
@@ -54,7 +53,7 @@ func TestEditor(t *testing.T) {
 		defer cancel()
 		path := testutil.TempRepo(t)
 		editorErr := errors.New("pretend something went wrong")
-		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
+		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {
 			c.Section(section).SetOption(sectionKey, expectedValue)
 			return true, editorErr
 		})
@@ -76,7 +75,7 @@ func newEditor(t *testing.T, repoPath string) Editor {
 	projectSourceDir := filepath.Join(filepath.Dir(thisFilePath), "../..")
 	biomePath := filepath.Join(t.TempDir(), "biome")
 	testutil.Execute(t, "go", "build", "-o", biomePath, projectSourceDir)
-	return NewEditor(repoPath, helperCommand(fmt.Sprintf("%s config-edit-helper", biomePath)))
+	return NewEditor(repoPath, HelperCommand(fmt.Sprintf("%s config-edit-helper", biomePath)))
 }
 
 func assertConfigNotSet(ctx context.Context, t *testing.T, path, configKey string) {
