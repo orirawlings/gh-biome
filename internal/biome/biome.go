@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"slices"
 
+	"github.com/cli/go-gh/v2/pkg/api"
+	graphql "github.com/cli/shurcooL-graphql"
 	"github.com/orirawlings/gh-biome/internal/config"
 	slicesutil "github.com/orirawlings/gh-biome/internal/util/slices"
 )
@@ -140,6 +142,9 @@ func (b *biome) validate(ctx context.Context) error {
 // owner should be added to the biome before any of the owner's repositories
 // are added as remotes.
 func (b *biome) AddOwners(ctx context.Context, owners []Owner) error {
+	if err := b.validateOwners(ctx, owners); err != nil {
+		return err
+	}
 	return b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
 		biomeSection := cfg.Section(section)
 
@@ -183,6 +188,34 @@ func (b *biome) Owners(ctx context.Context) ([]Owner, error) {
 		}
 	}
 	return owners, errs
+}
+
+func (b *biome) validateOwners(ctx context.Context, owners []Owner) error {
+	var errs []error
+	for _, owner := range owners {
+		if err := b.validateOwner(ctx, owner); err != nil {
+			errs = append(errs, fmt.Errorf("could not validate owner: %s: %w", owner, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (b *biome) validateOwner(ctx context.Context, owner Owner) error {
+	client, err := api.NewGraphQLClient(api.ClientOptions{
+		Host: owner.host,
+	})
+	if err != nil {
+		return fmt.Errorf("could not create API client: %s: %w", owner.host, err)
+	}
+	var query struct {
+		RepositoryOwner struct {
+			Id string
+		} `graphql:"repositoryOwner(login: $owner)"`
+	}
+	variables := map[string]interface{}{
+		"login": graphql.String(owner.name),
+	}
+	return client.QueryWithContext(ctx, "RepositoryOwner", &query, variables)
 }
 
 func (b *biome) editConfig(ctx context.Context, do func(context.Context, *config.Config) (bool, error)) error {

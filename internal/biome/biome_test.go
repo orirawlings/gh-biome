@@ -11,6 +11,7 @@ import (
 
 	"github.com/orirawlings/gh-biome/internal/config"
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
+	"gopkg.in/h2non/gock.v1"
 )
 
 func TestInit(t *testing.T) {
@@ -18,7 +19,9 @@ func TestInit(t *testing.T) {
 
 	path := t.TempDir()
 
-	defer testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
+	t.Cleanup(func() {
+		testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
+	})
 
 	t.Run("new biome", func(t *testing.T) {
 		initBiome(t, ctx, path, true)
@@ -77,6 +80,7 @@ func TestLoad(t *testing.T) {
 }
 
 func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed bool) Biome {
+	stubGitHub(t)
 	b, err := Init(ctx, path, biomeOptions(t)...)
 	if shouldSucceed && err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -87,6 +91,7 @@ func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed boo
 }
 
 func load(t testing.TB, ctx context.Context, path string, shouldSucceed bool) Biome {
+	stubGitHub(t)
 	b, err := Load(ctx, path, biomeOptions(t)...)
 	if shouldSucceed && err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -194,5 +199,44 @@ func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) 
 	testutil.Check(t, err)
 	if !slices.Equal(owners, expected) {
 		t.Errorf("unexpected owners: wanted %v, was %v", expected, owners)
+	}
+}
+
+func stubGitHub(t testing.TB) {
+	const testGHConfig = `
+hosts:
+  github.com:
+    user: user1
+    oauth_token: abc123
+  mygithub.biz:
+    user: bizuser1
+    oauth_token: def456
+`
+	t.Helper()
+	testutil.StubGHConfig(t, testGHConfig)
+	t.Cleanup(gock.Off)
+	// gock.Observe(gock.DumpRequest)
+
+	for owner, id := range map[string]string{
+		"orirawlings": "MDQ6VXNlcjU3MjEz",
+		"kubernetes":  "MDEyOk9yZ2FuaXphdGlvbjEzNjI5NDA4",
+		"git":         "MDEyOk9yZ2FuaXphdGlvbjE4MTMz",
+		"cli":         "MDEyOk9yZ2FuaXphdGlvbjU5NzA0NzEx",
+	} {
+		gock.New("https://api.github.com").
+			Post("/graphql").
+			MatchHeader("Authorization", "token abc123").
+			BodyString(fmt.Sprintf(`{"query":"query RepositoryOwner($login:String!){repositoryOwner(login: $owner){id}}","variables":{"login":"%s"}}`, owner)).
+			Persist().
+			Reply(200).
+			JSON(fmt.Sprintf(`
+				{
+				  "data": {
+					"repositoryOwner": {
+					  "id": "%s"
+					}
+				  }
+				}
+			`, id))
 	}
 }

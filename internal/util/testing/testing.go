@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os/exec"
 	"testing"
+
+	"github.com/cli/go-gh/v2/pkg/config"
 )
 
 // Execute the given system command, ensuring it succeeded, returning the stdout.
@@ -34,4 +36,15 @@ func TempRepo(t testing.TB) string {
 	path := t.TempDir()
 	_ = Execute(t, "git", "-C", path, "init", "--bare")
 	return path
+}
+
+func StubGHConfig(t testing.TB, cfgStr string) {
+	t.Helper()
+	old := config.Read
+	config.Read = func(_ *config.Config) (*config.Config, error) {
+		return config.ReadFromString(cfgStr), nil
+	}
+	t.Cleanup(func() {
+		config.Read = old
+	})
 }
