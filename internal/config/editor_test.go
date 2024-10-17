@@ -23,7 +23,7 @@ func TestEditor(t *testing.T) {
 	)
 	t.Run("save edits", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
-		defer cancel()
+		t.Cleanup(cancel)
 		path := testutil.TempRepo(t)
 		assertConfigNotSet(ctx, t, path, configKey)
 		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {
@@ -38,7 +38,7 @@ func TestEditor(t *testing.T) {
 
 	t.Run("do not save edits", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
-		defer cancel()
+		t.Cleanup(cancel)
 		path := testutil.TempRepo(t)
 		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {
 			c.Section(section).SetOption(sectionKey, expectedValue)
@@ -50,7 +50,7 @@ func TestEditor(t *testing.T) {
 
 	t.Run("editing error", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
-		defer cancel()
+		t.Cleanup(cancel)
 		path := testutil.TempRepo(t)
 		editorErr := errors.New("pretend something went wrong")
 		err := newEditor(t, path).Edit(ctx, func(ctx context.Context, c *Config) (bool, error) {

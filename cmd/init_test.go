@@ -14,7 +14,9 @@ func init() {
 
 func TestInitCmd_Execute(t *testing.T) {
 	path := t.TempDir()
-	defer testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
+	t.Cleanup(func() {
+		testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
+	})
 	rootCmd.SetArgs([]string{
 		"init",
 		path,
