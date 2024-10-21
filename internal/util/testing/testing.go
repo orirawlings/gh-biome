@@ -3,6 +3,7 @@ package testing
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,7 +55,7 @@ func BiomeBuild() (string, error) {
 		return "", errors.New("could not determine current source file path")
 	}
 	projectSourceDir := filepath.Join(filepath.Dir(thisFilePath), "../../..")
-	path := filepath.Join(os.TempDir(), "biome")
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("biome-%d", rand.Int()))
 	cmd := exec.Command("go", "build", "-o", path, projectSourceDir)
 	out, err := cmd.Output()
 	if err != nil {
