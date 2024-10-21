@@ -265,10 +265,10 @@ func (b *biome) validateOwners(ctx context.Context, owners []Owner) error {
 
 func (b *biome) validateOwner(ctx context.Context, owner Owner) error {
 	client, err := api.NewGraphQLClient(api.ClientOptions{
-		Host: owner.host,
+		Host: owner.Host(),
 	})
 	if err != nil {
-		return fmt.Errorf("could not create API client: %s: %w", owner.host, err)
+		return fmt.Errorf("could not create API client: %s: %w", owner.Host(), err)
 	}
 	var query struct {
 		RepositoryOwner struct {
@@ -461,10 +461,10 @@ func (b *biome) getConfig(ctx context.Context, key string) (string, error) {
 
 func (b *biome) buildRemotes(ctx context.Context, owner Owner) ([]remote, error) {
 	client, err := api.NewGraphQLClient(api.ClientOptions{
-		Host: owner.host,
+		Host: owner.Host(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not create API client: %s: %w", owner.host, err)
+		return nil, fmt.Errorf("could not create API client: %s: %w", owner.Host(), err)
 	}
 	var query struct {
 		RepositoryOwner struct {

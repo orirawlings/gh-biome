@@ -62,6 +62,16 @@ func ParseOwner(ownerRef string) (Owner, error) {
 	return o, nil
 }
 
+// Host is the GitHub server name, ex. `github.com`.
+func (o Owner) Host() string {
+	return o.host
+}
+
+// Name of the GitHub user or organziation.
+func (o Owner) Name() string {
+	return o.name
+}
+
 func (o Owner) String() string {
 	return path.Join(o.host, o.name)
 }

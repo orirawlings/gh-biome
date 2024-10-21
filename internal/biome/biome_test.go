@@ -476,7 +476,7 @@ hosts:
 
 	repositoriesStubs = make(map[string]*gock.Response)
 	for _, o := range owners {
-		host := o.host
+		host := o.Host()
 		if host == "github.com" {
 			host = "api.github.com"
 		}
@@ -484,7 +484,7 @@ hosts:
 		gock.New(fmt.Sprintf("https://%s", host)).
 			Post("/graphql").
 			HeaderPresent("Authorization").
-			BodyString(fmt.Sprintf(`{"query":"query Owner($owner:String!){repositoryOwner(login: $owner){id}}","variables":{"owner":%q}}`, o.name)).
+			BodyString(fmt.Sprintf(`{"query":"query Owner($owner:String!){repositoryOwner(login: $owner){id}}","variables":{"owner":%q}}`, o.Name())).
 			Persist().
 			Reply(200).
 			JSON(fmt.Sprintf(`
@@ -500,7 +500,7 @@ hosts:
 		repositoriesStubs[o.String()] = gock.New(fmt.Sprintf("https://%s", host)).
 			Post("/graphql").
 			HeaderPresent("Authorization").
-			BodyString(fmt.Sprintf(`{"query":"query OwnerRepositories($endCursor:String$owner:String!){repositoryOwner(login: $owner){repositories(first: 100, after: $endCursor){nodes{isDisabled,isArchived,isLocked,url,defaultBranchRef{name,prefix}},pageInfo{hasNextPage,endCursor}}}}","variables":{"endCursor":null,"owner":%q}}`, o.name)).
+			BodyString(fmt.Sprintf(`{"query":"query OwnerRepositories($endCursor:String$owner:String!){repositoryOwner(login: $owner){repositories(first: 100, after: $endCursor){nodes{isDisabled,isArchived,isLocked,url,defaultBranchRef{name,prefix}},pageInfo{hasNextPage,endCursor}}}}","variables":{"endCursor":null,"owner":%q}}`, o.Name())).
 			Persist().
 			Reply(200)
 
