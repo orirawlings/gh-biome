@@ -5,11 +5,11 @@ import (
 	"os/exec"
 )
 
-// Remote represents a git remote in the biome configuration. Typically the
+// remote represents a git remote in the biome configuration. Typically the
 // remote would be stored in git config, so references and objects can be
 // fetched from the remote. The biome configuration would also record metadata
 // about whether the remote repository is still active and fetchable in GitHub.
-type Remote struct {
+type remote struct {
 
 	// Name of the git remote in the biome repository.
 	Name string
@@ -22,11 +22,18 @@ type Remote struct {
 	// https://docs.github.com/en/repositories/archiving-a-github-repository
 	Archived bool
 
-	// Disabled indicates that the remote repository is locked in GitHub,
-	// disabled from any updates, usually because the repository has been
-	// migrated to a different git forge.
-	// https://docs.github.com/en/migrations/overview/about-locked-repositories
+	// Disabled indicates that the remote repository is disabled in GitHub,
+	// unable to be updated. This seems to be a rare and undocumented
+	// condition for GitHub repositories. Disabled repositories cannot be
+	// fetched.
 	Disabled bool
+
+	// Locked indicates that the remote repository is locked in GitHub,
+	// disabled from any updates, usually because the repository has been
+	// migrated to a different git forge. Locked repositories cannot be
+	// fetched.
+	// https://docs.github.com/en/migrations/overview/about-locked-repositories
+	Locked bool
 
 	// Head is the target git reference in the biome repository that this
 	// remote's symbolic HEAD reference should point to.
@@ -40,7 +47,7 @@ type Remote struct {
 // `git check-ref-format --refspec-pattern` to ensure it is valid.
 //
 // See https://git-scm.com/docs/git-check-ref-format
-func (r Remote) FetchRefspec() (string, error) {
+func (r remote) FetchRefspec() (string, error) {
 	src := "refs/*"
 	dst := fmt.Sprintf("refs/remotes/%s/*", r.Name)
 	c := exec.Command("git", "check-ref-format", "--refspec-pattern", dst)
@@ -60,7 +67,7 @@ func (r Remote) FetchRefspec() (string, error) {
 
 // Supported returns true if this remote configuration is currently supported
 // by this tool. Unsupported remotes are skipped during configuration setup.
-func (r Remote) Supported() bool {
+func (r remote) Supported() bool {
 	_, err := r.FetchRefspec()
 	return err == nil
 }

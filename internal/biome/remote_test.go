@@ -5,34 +5,34 @@ import (
 )
 
 var (
-	barRemote = Remote{
+	barRemote = remote{
 		Name:     "github.com/orirawlings/bar",
 		FetchURL: "https://github.com/orirawlings/bar.git",
 		Head:     "refs/remotes/github.com/orirawlings/bar/heads/main",
 	}
-	archivedRemote = Remote{
+	archivedRemote = remote{
 		Name:     "github.com/orirawlings/archived",
 		FetchURL: "https://github.com/orirawlings/archived.git",
 		Archived: true,
 		Head:     "refs/remotes/github.com/orirawlings/archived/heads/master",
 	}
-	disabledRemote = Remote{
+	disabledRemote = remote{
 		Name:     "github.com/orirawlings/disabled",
 		FetchURL: "https://github.com/orirawlings/disabled.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/orirawlings/disabled/heads/main",
 	}
-	lockedRemote = Remote{
+	lockedRemote = remote{
 		Name:     "github.com/orirawlings/locked",
 		FetchURL: "https://github.com/orirawlings/locked.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/orirawlings/locked/heads/main",
 	}
-	headlessRemote = Remote{
+	headlessRemote = remote{
 		Name:     "github.com/orirawlings/headless",
 		FetchURL: "https://github.com/orirawlings/headless.git",
 	}
-	dotPrefixRemote = Remote{
+	dotPrefixRemote = remote{
 		Name:     "github.com/orirawlings/.github",
 		FetchURL: "https://github.com/orirawlings/.github.git",
 		Head:     "refs/remotes/github.com/orirawlings/.github/heads/main",
@@ -41,7 +41,7 @@ var (
 
 func TestRemote_FetchRefspec(t *testing.T) {
 	// remotes with a vaild fetch refspec
-	for _, r := range []Remote{
+	for _, r := range []remote{
 		barRemote,
 		archivedRemote,
 		disabledRemote,
@@ -56,7 +56,7 @@ func TestRemote_FetchRefspec(t *testing.T) {
 		})
 	}
 	// remotes with an invaild fetch refspec
-	for _, r := range []Remote{
+	for _, r := range []remote{
 		dotPrefixRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestRemote_FetchRefspec(t *testing.T) {
 
 func TestRemote_Supported(t *testing.T) {
 	// remotes with a vaild fetch refspec
-	for _, r := range []Remote{
+	for _, r := range []remote{
 		barRemote,
 		archivedRemote,
 		disabledRemote,
@@ -84,7 +84,7 @@ func TestRemote_Supported(t *testing.T) {
 		})
 	}
 	// remotes with an invaild fetch refspec
-	for _, r := range []Remote{
+	for _, r := range []remote{
 		dotPrefixRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {

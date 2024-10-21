@@ -47,7 +47,7 @@ func ParseOwner(ownerRef string) (Owner, error) {
 	parts := strings.Split(s, "/")
 	switch len(parts) {
 	case 2:
-		o.host, o.name = parts[0], parts[1]
+		o.host, o.name = strings.ToLower(parts[0]), parts[1]
 	case 1:
 		if protocolIncluded || parts[0] == "" {
 			return o, err
