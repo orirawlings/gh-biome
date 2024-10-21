@@ -86,6 +86,19 @@ var (
 	repositoriesStubs map[string]*gock.Response
 )
 
+type ref struct {
+	Name   string
+	Prefix string
+}
+
+type repository struct {
+	IsDisabled       bool
+	IsArchived       bool
+	IsLocked         bool
+	URL              string `graphql:"url" json:"url"`
+	DefaultBranchRef *ref
+}
+
 func stubGitHub(t testing.TB) {
 	const testGHConfig = `
 hosts:
