@@ -27,7 +27,7 @@ Register the git repo for incremental maintenance and starts the maintenance sch
 		if len(args) > 0 {
 			path = args[0]
 		}
-		if _, err := biome.Init(cmd.Context(), path); err != nil {
+		if _, err := biome.Init(cmd.Context(), path, biomeOptions...); err != nil {
 			return fmt.Errorf("failed to initialize biome: %w", err)
 		}
 		_, err := fmt.Fprintf(cmd.OutOrStderr(), "git biome initialized in %s\n", path)
