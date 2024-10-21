@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +29,7 @@ is a GitHub user or organization.
 			return err
 		}
 		for _, owner := range owners {
-			fmt.Println(owner)
+			cmd.Println(owner)
 		}
 
 		return nil

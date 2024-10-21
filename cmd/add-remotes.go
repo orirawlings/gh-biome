@@ -166,7 +166,7 @@ type repository struct {
 	IsDisabled       bool
 	IsArchived       bool
 	IsLocked         bool
-	URL              string `graphql:"url"`
+	URL              string `graphql:"url" json:"url"`
 	DefaultBranchRef *ref
 }
 
