@@ -157,15 +157,11 @@ func TestInit(t *testing.T) {
 		if refFormat := strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
 			t.Errorf("expected reftable format for references, but was %q", refFormat)
 		}
-		if fetchParallel := getGitConfig(t, path, "fetch.parallel"); fetchParallel != "0" {
-			t.Errorf("expected parallel fetch to be enabled, but was: %q", fetchParallel)
-		}
-		if autoMaintenanceEnabled := getGitConfig(t, path, "maintenance.auto"); autoMaintenanceEnabled != "false" {
-			t.Errorf("expected auto maintenance to be disabled, but was not")
-		}
-		if maintenanceStrategy := getGitConfig(t, path, "maintenance.strategy"); maintenanceStrategy != "incremental" {
-			t.Errorf("expected incremental maintenance strategy, but was: %q", maintenanceStrategy)
-		}
+		assertGitConfig(t, path, "fetch.parallel", "1")
+		assertGitConfig(t, path, "fetch.writeCommitGraph", "true")
+		assertGitConfig(t, path, "transfer.unpackLimit", "0")
+		assertGitConfig(t, path, "maintenance.auto", "false")
+		assertGitConfig(t, path, "maintenance.strategy", "incremental")
 
 		// assert that Init is idempotent
 		initBiome(t, ctx, path, true)
@@ -178,8 +174,16 @@ func TestInit(t *testing.T) {
 	})
 }
 
-func getGitConfig(t *testing.T, dir, key string) string {
-	return strings.TrimSpace(testutil.Execute(t, "git", "-C", dir, "config", "get", "--local", key))
+func assertGitConfig(t *testing.T, path, key, expected string) {
+	t.Helper()
+	actual := getGitConfig(t, path, key)
+	if actual != expected {
+		t.Errorf("unexpected value for git config setting %q: wanted %q, was %q", key, expected, actual)
+	}
+}
+
+func getGitConfig(t *testing.T, path, key string) string {
+	return strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "config", "get", "--local", key))
 }
 
 func TestLoad(t *testing.T) {

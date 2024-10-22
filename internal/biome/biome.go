@@ -23,9 +23,13 @@ const (
 	// settings.
 	section = "biome"
 
-	// versionKey is a git config key that indicates what version of biome
+	// versionOpt is a git config section option key that indicates which
+	// version of biome configuration settings are used in the repo.
+	versionOpt = "version"
+
+	// versionKey is a git config key that indicates which version of biome
 	// configuration settings are used in the repo.
-	versionKey = section + ".version"
+	versionKey = section + "." + versionOpt
 
 	// v1 is the first version of biome configuration schema used in a git repo.
 	v1 = "1"
@@ -157,17 +161,25 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd.String(), err, out)
 	}
 
-	// record biome schema version in git config
-	if err := b.setConfig(ctx, versionKey, v1); err != nil {
-		return nil, err
-	}
+	if err := b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
+		c.SetOption(section, "", versionOpt, v1)
 
-	// fetch.parallel Specifies the maximal number of fetch operations to
-	// be run in parallel at a time (submodules, or remotes when the
-	// --multiple option of git-fetch(1) is in effect).
-	// A value of 0 will give some reasonable default. If unset, it
-	// defaults to 1.
-	if err := b.setConfig(ctx, "fetch.parallel", "0"); err != nil {
+		// fetch.parallel Specifies the maximal number of fetch operations to
+		// be run in parallel at a time (submodules, or remotes when the
+		// --multiple option of git-fetch(1) is in effect).
+		// A value of 0 will give some reasonable default. If unset, it
+		// defaults to 1.
+		//
+		// TODO (orirawlings): It'd be nice to set this to 0 instead, but it
+		// seems like reftable locking collisions cause parallel fetch jobs to
+		// fail. Investigate if there is a way to mitigate.
+		c.SetOption("fetch", "", "parallel", "1")
+
+		c.SetOption("fetch", "", "writeCommitGraph", "true")
+		c.SetOption("transfer", "", "unpackLimit", "0")
+
+		return true, nil
+	}); err != nil {
 		return nil, err
 	}
 
