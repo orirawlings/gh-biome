@@ -300,6 +300,15 @@ my.github.biz/foobar
 		t.Errorf("expected %q config values %q, but was %q", ownersKey, expected, ownerRefs)
 	}
 
+	// remove an owner
+	removeOwners(t, ctx, b, github_com_orirawlings)
+	expectOwners(t, ctx, b, []Owner{
+		github_com_cli,
+		github_com_git,
+		github_com_kubernetes,
+		my_github_biz_foobar,
+	})
+
 	// bad owner in config
 	testutil.Execute(t, "git", "-C", path, "config", "set", "--value=bad/bad/bad", ownersKey, "bad/bad/bad")
 	_, err = b.Owners(ctx)
@@ -391,13 +400,36 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectArchived(t, path, nil)
 	expectDisabled(t, path, nil)
 	expectLocked(t, path, nil)
+
+	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
+	testutil.Check(t, b.UpdateRemotes(ctx))
+	expectRemotes(t, path, []string{
+		"github.com/cli/cli",
+		"github.com/git/git",
+		"my.github.biz/foobar/bazbiz",
+	})
+	expectActive(t, path, []string{
+		"github.com/cli/cli",
+		"github.com/git/git",
+		"my.github.biz/foobar/bazbiz",
+	})
+	expectArchived(t, path, nil)
+	expectDisabled(t, path, nil)
+	expectLocked(t, path, nil)
 }
 
 func addOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
+	t.Helper()
 	testutil.Check(t, b.AddOwners(ctx, owners))
 }
 
+func removeOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
+	t.Helper()
+	testutil.Check(t, b.RemoveOwners(ctx, owners))
+}
+
 func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) {
+	t.Helper()
 	owners, err := b.Owners(ctx)
 	testutil.Check(t, err)
 	if !slices.Equal(owners, expected) {
@@ -406,6 +438,7 @@ func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) 
 }
 
 func expectRemotes(t *testing.T, path string, expected []string) {
+	t.Helper()
 	remotes := strings.Split(strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "remote")), "\n")
 	expected = slices.Sorted(slices.Values(expected))
 	if !slices.Equal(remotes, expected) {

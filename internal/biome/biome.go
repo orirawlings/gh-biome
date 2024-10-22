@@ -110,6 +110,12 @@ type Biome interface {
 	// repositories can be added as remotes.
 	AddOwners(context.Context, []Owner) error
 
+	// RemoveOwners removes the given GitHub repository owners from the records
+	// on the git biome. If any given owners were not previously added, an
+	// error will be returned. All remotes for a removed owner's repositories
+	// will be removed in the next [UpdateRemotes] invocation.
+	RemoveOwners(context.Context, []Owner) error
+
 	// Owners lists the GitHub repository owners that are currently within the
 	// biome.
 	Owners(context.Context) ([]Owner, error)
@@ -233,6 +239,33 @@ func (b *biome) AddOwners(ctx context.Context, owners []Owner) error {
 		biomeSection.RemoveOption(ownersOpt)
 
 		// store all owners
+		for _, ownerRef := range ownerRefs {
+			biomeSection.AddOption(ownersOpt, ownerRef)
+		}
+
+		return true, nil
+	})
+}
+
+// RemoveOwners removes the given GitHub repository owners from the records
+// on the git biome. If any given owners were not previously added, an
+// error will be returned. All remotes for a removed owner's repositories
+// will be removed in the next [UpdateRemotes] invocation.
+func (b *biome) RemoveOwners(ctx context.Context, owners []Owner) error {
+	return b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
+		biomeSection := cfg.Section(section)
+
+		var ownerRefs []string
+		for _, ownerRef := range biomeSection.OptionAll(ownersOpt) {
+			if !slices.ContainsFunc(owners, func(owner Owner) bool { return owner.String() == ownerRef }) {
+				ownerRefs = append(ownerRefs, ownerRef)
+			}
+		}
+
+		// clear stored owners
+		biomeSection.RemoveOption(ownersOpt)
+
+		// store remaining owners
 		for _, ownerRef := range ownerRefs {
 			biomeSection.AddOption(ownersOpt, ownerRef)
 		}
