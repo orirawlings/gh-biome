@@ -84,12 +84,12 @@ Examples:
 			cmd.PrintErrf("Adding %s...\n", owner)
 		}
 
-		// record owners/users in git config if not already present
+		// record owners in git config if not already present
 		if err := b.AddOwners(ctx, owners); err != nil {
 			return err
 		}
 
-		// record owners/users in git config if not already present
+		// update git remote configurations for all owners
 		if err := b.UpdateRemotes(ctx); err != nil {
 			return err
 		}
