@@ -158,7 +158,7 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 	// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
 	gitInitCmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
 	if out, err := gitInitCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd.String(), err, out)
+		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd, err, out)
 	}
 
 	if err := b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
@@ -185,8 +185,8 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 
 	// start git maintenance for the repo
 	maintenanceStartCmd := exec.Command("git", "-C", path, "maintenance", "start")
-	if _, err := maintenanceStartCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("could not %q: %w", maintenanceStartCmd.String(), err)
+	if out, err := maintenanceStartCmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("could not %q: %w\n%s", maintenanceStartCmd, err, string(out))
 	}
 	return b, nil
 }
@@ -399,9 +399,9 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 					biomeRemotesSubsection.AddOption(activeOpt, r.Name)
 				}
 
+				// Add remote
 				delete(remotesToCleanUp, r.Name)
 				addedRemotes = append(addedRemotes, r)
-				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL)
 				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL)
 				gitRemoteSection.Subsection(r.Name).SetOption("fetch", refspec)
 				gitRemoteSection.Subsection(r.Name).SetOption("tagOpt", "--no-tags")

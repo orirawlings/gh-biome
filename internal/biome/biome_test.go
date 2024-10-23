@@ -347,6 +347,9 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectLocked(t, path, []string{
 		lockedRemote.Name,
 	})
+	expectUnsupported(t, path, []string{
+		dotPrefixRemote.Name,
+	})
 
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
 	addOwners(t, ctx, b, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
@@ -379,6 +382,9 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectLocked(t, path, []string{
 		lockedRemote.Name,
 	})
+	expectUnsupported(t, path, []string{
+		dotPrefixRemote.Name,
+	})
 
 	// Remove all github.com/orirawlings repos except github.com/orirawlings/bar
 	updateStubbedGitHubRepositories(t, github_com_orirawlings, []repository{
@@ -404,6 +410,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectArchived(t, path, nil)
 	expectDisabled(t, path, nil)
 	expectLocked(t, path, nil)
+	expectUnsupported(t, path, nil)
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
 	testutil.Check(t, b.UpdateRemotes(ctx))
@@ -420,6 +427,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectArchived(t, path, nil)
 	expectDisabled(t, path, nil)
 	expectLocked(t, path, nil)
+	expectUnsupported(t, path, nil)
 }
 
 func addOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
@@ -492,6 +500,11 @@ func expectDisabled(t *testing.T, path string, expected []string) {
 func expectLocked(t *testing.T, path string, expected []string) {
 	t.Helper()
 	expectRemotesForConfigKey(t, path, lockedKey, expected)
+}
+
+func expectUnsupported(t *testing.T, path string, expected []string) {
+	t.Helper()
+	expectRemotesForConfigKey(t, path, unsupportedKey, expected)
 }
 
 func stubGitHub(t testing.TB) {
