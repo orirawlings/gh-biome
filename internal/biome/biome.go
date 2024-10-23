@@ -10,8 +10,10 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/orirawlings/gh-biome/internal/config"
+	"github.com/orirawlings/gh-biome/internal/util/retry"
 	slicesutil "github.com/orirawlings/gh-biome/internal/util/slices"
 
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -156,9 +158,9 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 	}
 
 	// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
-	gitInitCmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
-	if out, err := gitInitCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", gitInitCmd, err, out)
+	cmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", cmd, err, out)
 	}
 
 	if err := b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
@@ -183,12 +185,14 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		return nil, err
 	}
 
-	// start git maintenance for the repo
-	maintenanceStartCmd := exec.Command("git", "-C", path, "maintenance", "start")
-	if out, err := maintenanceStartCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("could not %q: %w\n%s", maintenanceStartCmd, err, string(out))
-	}
-	return b, nil
+	return b, retry.WithBackoff(ctx, 3, 100*time.Millisecond, func() error {
+		// start git maintenance for the repo
+		cmd := exec.Command("git", "-C", path, "maintenance", "start")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("could not %q: %w\n%s", cmd, err, string(out))
+		}
+		return nil
+	})
 }
 
 // Load an existing git biome at the given filesystem directory path.
@@ -480,16 +484,6 @@ func (b *biome) editConfig(ctx context.Context, do func(context.Context, *config
 	return config.NewEditor(b.path, b.editorOptions...).Edit(ctx, do)
 }
 
-func (b *biome) setConfig(ctx context.Context, key, value string, options ...string) error {
-	args := append([]string{"-C", b.path, "config", "set", "--local"}, options...)
-	args = append(args, key, value)
-	cmd := exec.CommandContext(ctx, "git", args...)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("could not %q: %w: %s", cmd.String(), err, out)
-	}
-	return nil
-}
-
 func (b *biome) getConfig(ctx context.Context, key string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", "-C", b.path, "config", "get", "--local", key)
 	out, err := cmd.Output()
@@ -547,6 +541,8 @@ func (b *biome) buildRemotes(ctx context.Context, owner Owner) ([]remote, error)
 
 type BiomeOption func(*biome)
 
+// EditorOptions overrides the options to use when provisioning a
+// `git config edit` helper.
 func EditorOptions(opts ...config.EditorOption) BiomeOption {
 	return func(b *biome) {
 		b.editorOptions = opts
