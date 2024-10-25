@@ -154,10 +154,12 @@ func TestInit(t *testing.T) {
 		initBiome(t, ctx, path, true)
 
 		testutil.Execute(t, "git", "-C", path, "fsck")
-		if refFormat := strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != "reftable" {
-			t.Errorf("expected reftable format for references, but was %q", refFormat)
+
+		expectedRefFormat := "files"
+		if refFormat := strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "rev-parse", "--show-ref-format")); refFormat != expectedRefFormat {
+			t.Errorf("expected %q format for references, but was %q", expectedRefFormat, refFormat)
 		}
-		assertGitConfig(t, path, "fetch.parallel", "1")
+		assertGitConfig(t, path, "fetch.parallel", "0")
 		assertGitConfig(t, path, "fetch.writeCommitGraph", "true")
 		assertGitConfig(t, path, "transfer.unpackLimit", "0")
 		assertGitConfig(t, path, "maintenance.auto", "false")

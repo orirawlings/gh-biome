@@ -147,10 +147,18 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		opt(b)
 	}
 
-	// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
-	cmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
+	// TODO (orirawlings): Explore using reftable and fail gracefully if reftable is not available
+	// in the user's version of git. reftable would likely be much faster for bulk and concurrent
+	// reads of references, but it does not support concurrent writes. `git fetch --multiple` and
+	// `git fetch --all` perform potentially concurrent writes and does not appear to busy-spin
+	// with backoff when making ref updates. This is a blocker for parallel fetching for biomes.
+	//
+	// See https://git-scm.com/docs/reftable#_update_transactions
+	//
+	// cmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
+	cmd := exec.CommandContext(ctx, "git", "init", "--bare", b.path)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", cmd, err, out)
+		return nil, fmt.Errorf("could not %q: %w\n%s", cmd, err, out)
 	}
 
 	switch err := b.validate(ctx); err {
@@ -172,11 +180,7 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		// --multiple option of git-fetch(1) is in effect).
 		// A value of 0 will give some reasonable default. If unset, it
 		// defaults to 1.
-		//
-		// TODO (orirawlings): It'd be nice to set this to 0 instead, but it
-		// seems like reftable locking collisions cause parallel fetch jobs to
-		// fail. Investigate if there is a way to mitigate.
-		c.SetOption("fetch", "", "parallel", "1")
+		c.SetOption("fetch", "", "parallel", "0")
 
 		c.SetOption("fetch", "", "writeCommitGraph", "true")
 		c.SetOption("transfer", "", "unpackLimit", "0")
