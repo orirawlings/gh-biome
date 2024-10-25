@@ -8,7 +8,6 @@ import (
 
 	"github.com/orirawlings/gh-biome/internal/biome"
 	"github.com/orirawlings/gh-biome/internal/config"
-	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
 )
 
 func init() {
@@ -46,9 +45,6 @@ func initBiome(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command: %v", err)
 	}
-	t.Cleanup(func() {
-		testutil.Execute(t, "git", "-C", path, "maintenance", "unregister")
-	})
 
 	// switch to biome directory
 	if err := os.Chdir(path); err != nil {

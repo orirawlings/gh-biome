@@ -10,10 +10,8 @@ import (
 	"path"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/orirawlings/gh-biome/internal/config"
-	"github.com/orirawlings/gh-biome/internal/util/retry"
 	slicesutil "github.com/orirawlings/gh-biome/internal/util/slices"
 
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -172,7 +170,7 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		return nil, err
 	}
 
-	if err := b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
+	return b, b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
 		c.SetOption(section, "", versionOpt, v1)
 
 		// fetch.parallel Specifies the maximal number of fetch operations to
@@ -186,17 +184,6 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		c.SetOption("transfer", "", "unpackLimit", "0")
 
 		return true, nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return b, retry.WithBackoff(ctx, 3, 100*time.Millisecond, func() error {
-		// start git maintenance for the repo
-		cmd := exec.Command("git", "-C", path, "maintenance", "start")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("could not %q: %w\n%s", cmd, err, string(out))
-		}
-		return nil
 	})
 }
 

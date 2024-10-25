@@ -162,8 +162,6 @@ func TestInit(t *testing.T) {
 		assertGitConfig(t, path, "fetch.parallel", "0")
 		assertGitConfig(t, path, "fetch.writeCommitGraph", "true")
 		assertGitConfig(t, path, "transfer.unpackLimit", "0")
-		assertGitConfig(t, path, "maintenance.auto", "false")
-		assertGitConfig(t, path, "maintenance.strategy", "incremental")
 
 		// assert that Init is idempotent
 		initBiome(t, ctx, path, true)
@@ -214,9 +212,6 @@ func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed boo
 	t.Helper()
 	stubGitHub(t)
 	b, err := Init(ctx, path, biomeOptions()...)
-	t.Cleanup(func() {
-		exec.Command("git", "-C", path, "maintenance", "unregister").Run()
-	})
 	if shouldSucceed && err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	} else if !shouldSucceed && err == nil {

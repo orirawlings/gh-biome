@@ -19,7 +19,6 @@ var initCmd = &cobra.Command{
 Initialize a new git-biome in the given directory.
 
 This will initialize a new, bare git repo in the directory with configuration settings tuned for git-biome support.
-Register the git repo for incremental maintenance and starts the maintenance schedule in the background.
 `,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
