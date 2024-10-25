@@ -160,8 +160,6 @@ func TestInit(t *testing.T) {
 			t.Errorf("expected %q format for references, but was %q", expectedRefFormat, refFormat)
 		}
 		assertGitConfig(t, path, "fetch.parallel", "0")
-		assertGitConfig(t, path, "fetch.writeCommitGraph", "true")
-		assertGitConfig(t, path, "transfer.unpackLimit", "0")
 
 		// assert that Init is idempotent
 		initBiome(t, ctx, path, true)

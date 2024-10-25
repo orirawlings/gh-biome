@@ -180,9 +180,6 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 		// defaults to 1.
 		c.SetOption("fetch", "", "parallel", "0")
 
-		c.SetOption("fetch", "", "writeCommitGraph", "true")
-		c.SetOption("transfer", "", "unpackLimit", "0")
-
 		return true, nil
 	})
 }
