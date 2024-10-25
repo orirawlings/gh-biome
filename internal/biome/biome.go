@@ -146,21 +146,22 @@ func Init(ctx context.Context, path string, opts ...BiomeOption) (Biome, error) 
 	for _, opt := range opts {
 		opt(b)
 	}
-	switch err := b.validate(ctx); err {
-	case nil:
-		// biome already initialized
-		return b, nil
-	case errNotGitRepo:
-		// path is not a git repo, can be initialized
-	default:
-		// either couldn't determine if path is a git repo or is git repo with invalid biome settings
-		return nil, err
-	}
 
 	// TODO (orirawlings): Fail gracefully if reftable is not available in the user's version of git.
 	cmd := exec.CommandContext(ctx, "git", "init", "--bare", "--ref-format=reftable", b.path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("could not init git repo: %q: %w\n\n%s", cmd, err, out)
+	}
+
+	switch err := b.validate(ctx); err {
+	case nil:
+		// biome already initialized
+		return b, nil
+	case errVersionNotSet:
+		// git repo has never been initialized as a biome
+	default:
+		// either path is not a git repo or is git repo with invalid biome settings
+		return nil, err
 	}
 
 	if err := b.editConfig(ctx, func(ctx context.Context, c *config.Config) (bool, error) {
