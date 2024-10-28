@@ -115,9 +115,8 @@ type Biome interface {
 	AddOwners(context.Context, []Owner) error
 
 	// RemoveOwners removes the given GitHub repository owners from the records
-	// on the git biome. If any given owners were not previously added, an
-	// error will be returned. All remotes for a removed owner's repositories
-	// will be removed in the next [UpdateRemotes] invocation.
+	// on the git biome. All remotes for a removed owner's repositories will be
+	// removed in the next [UpdateRemotes] invocation.
 	RemoveOwners(context.Context, []Owner) error
 
 	// Owners lists the GitHub repository owners that are currently within the
@@ -253,9 +252,8 @@ func (b *biome) AddOwners(ctx context.Context, owners []Owner) error {
 }
 
 // RemoveOwners removes the given GitHub repository owners from the records
-// on the git biome. If any given owners were not previously added, an
-// error will be returned. All remotes for a removed owner's repositories
-// will be removed in the next [UpdateRemotes] invocation.
+// on the git biome. All remotes for a removed owner's repositories will be
+// removed in the next [UpdateRemotes] invocation.
 func (b *biome) RemoveOwners(ctx context.Context, owners []Owner) error {
 	return b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
 		biomeSection := cfg.Section(section)

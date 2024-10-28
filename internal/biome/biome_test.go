@@ -309,12 +309,19 @@ my.github.biz/foobar
 		my_github_biz_foobar,
 	})
 
+	// removing an owner should be idempotent
+	removeOwners(t, ctx, b, github_com_orirawlings)
+	expectOwners(t, ctx, b, []Owner{
+		github_com_cli,
+		github_com_git,
+		github_com_kubernetes,
+		my_github_biz_foobar,
+	})
+
 	// bad owner in config
 	testutil.Execute(t, "git", "-C", path, "config", "set", "--value=bad/bad/bad", ownersKey, "bad/bad/bad")
 	_, err = b.Owners(ctx)
-	if err == nil {
-		t.Error("expected error, but was nil")
-	}
+	testutil.ExpectError(t, err)
 }
 
 func TestBiome_UpdateRemotes(t *testing.T) {
