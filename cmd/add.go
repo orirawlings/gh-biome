@@ -20,7 +20,7 @@ func init() {
 
 var addCmd = &cobra.Command{
 	Use:   "add <github-owner> [...]",
-	Short: "Add GitHub user(s) or organization(s) to the git biome.",
+	Short: "Add GitHub user(s) or organization(s) to the git biome",
 	Long: `
 Add the given GitHub repository owner(s) to the git biome. An owner is a GitHub
 user or organization. Each repository owned by the owner will be recorded and
@@ -45,16 +45,14 @@ of the owner.
 	<host>/<owner-name>/<repo-name>
 
 Run 'git remote' to show a listing of all remotes added to the biome.
+`,
+	Example: `biome add orirawlings
 
-Examples:
+biome add github.com/orirawlings
 
-	add orirawlings
+biome add https://github.com/orirawlings
 
-	add github.com/orirawlings
-
-	add https://github.com/orirawlings
-
-	add github.com/orirawlings github.com/git github.com/cli
+biome add github.com/orirawlings github.com/git github.com/cli
 `,
 	Args: cobra.MatchAll(
 		cobra.MinimumNArgs(1),

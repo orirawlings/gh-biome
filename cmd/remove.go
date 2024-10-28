@@ -12,7 +12,7 @@ func init() {
 
 var removeCmd = &cobra.Command{
 	Use:   "remove <github-owner> [...]",
-	Short: "Remove GitHub user(s) or organization(s) from the git biome.",
+	Short: "Remove GitHub user(s) or organization(s) from the git biome",
 	Long: `
 Remove the given GitHub repository owner(s) from the git biome. An owner is a
 GitHub user or organization. Each repository owned by the owner will be from

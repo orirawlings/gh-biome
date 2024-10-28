@@ -10,7 +10,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List GitHub user(s) or organization(s) that have been added to the git biome.",
+	Short: "List GitHub user(s) or organization(s) that have been added to the git biome",
 	Long: `
 List GitHub repository owner(s) that have been added to the git biome. An owner
 is a GitHub user or organization.

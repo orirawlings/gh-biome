@@ -14,7 +14,7 @@ func init() {
 
 var initCmd = &cobra.Command{
 	Use:   "init [<directory>]",
-	Short: "Initialize a new git-biome in the given directory.",
+	Short: "Initialize a new git-biome in the given directory",
 	Long: `
 Initialize a new git-biome in the given directory.
 
