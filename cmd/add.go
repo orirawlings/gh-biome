@@ -1,11 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os/exec"
-
-	"github.com/orirawlings/gh-biome/internal/biome"
-
 	"github.com/spf13/cobra"
 )
 
@@ -56,14 +51,7 @@ biome add github.com/orirawlings github.com/git github.com/cli
 `,
 	Args: cobra.MatchAll(
 		cobra.MinimumNArgs(1),
-		func(cmd *cobra.Command, args []string) error {
-			for _, owner := range args {
-				if _, err := biome.ParseOwner(owner); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		validOwnerRefs,
 	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -72,13 +60,11 @@ biome add github.com/orirawlings github.com/git github.com/cli
 			return err
 		}
 
-		var owners []biome.Owner
-		for _, owner := range args {
-			owner, err := biome.ParseOwner(owner)
-			if err != nil {
-				return err
-			}
-			owners = append(owners, owner)
+		owners, err := parseOwners(args)
+		if err != nil {
+			return err
+		}
+		for _, owner := range owners {
 			cmd.PrintErrf("Adding %s...\n", owner)
 		}
 
@@ -94,15 +80,8 @@ biome add github.com/orirawlings github.com/git github.com/cli
 
 		// fetch remotes
 		if !skipFetch {
-			fetchArgs := []string{"fetch", "--multiple"}
-			for _, owner := range owners {
-				fetchArgs = append(fetchArgs, owner.RemoteGroup())
-			}
-			c := exec.CommandContext(ctx, "git", fetchArgs...)
-			c.Stdout = cmd.OutOrStdout()
-			c.Stderr = cmd.ErrOrStderr()
-			if err := c.Run(); err != nil {
-				return fmt.Errorf("could not %q: %w", c, err)
+			if err := fetch(ctx, cmd, owners); err != nil {
+				return err
 			}
 		}
 

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"github.com/orirawlings/gh-biome/internal/biome"
-
 	"github.com/spf13/cobra"
 )
 
@@ -26,28 +24,19 @@ the server. If <host> is omitted, "github.com" is assumed.
 	[https://][<host>/]<owner-name>
 
 Each of the owners' repositories will be removed from the git remotes.
+`,
+	Example: `biome remove orirawlings
 
-Examples:
+biome remove github.com/orirawlings
 
-	remove orirawlings
+biome remove https://github.com/orirawlings
 
-	remove github.com/orirawlings
-
-	remove https://github.com/orirawlings
-
-	remove github.com/orirawlings github.com/git github.com/cli
+biome remove github.com/orirawlings github.com/git github.com/cli
 `,
 	Aliases: []string{"rm"},
 	Args: cobra.MatchAll(
 		cobra.MinimumNArgs(1),
-		func(cmd *cobra.Command, args []string) error {
-			for _, owner := range args {
-				if _, err := biome.ParseOwner(owner); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		validOwnerRefs,
 	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -56,13 +45,11 @@ Examples:
 			return err
 		}
 
-		var owners []biome.Owner
-		for _, owner := range args {
-			owner, err := biome.ParseOwner(owner)
-			if err != nil {
-				return err
-			}
-			owners = append(owners, owner)
+		owners, err := parseOwners(args)
+		if err != nil {
+			return err
+		}
+		for _, owner := range owners {
 			cmd.PrintErrf("Removing %s...\n", owner)
 		}
 
