@@ -13,6 +13,7 @@ import (
 
 	"github.com/orirawlings/gh-biome/internal/config"
 	testutil "github.com/orirawlings/gh-biome/internal/util/testing"
+
 	"gopkg.in/h2non/gock.v1"
 )
 
@@ -210,10 +211,10 @@ func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed boo
 	t.Helper()
 	stubGitHub(t)
 	b, err := Init(ctx, path, biomeOptions()...)
-	if shouldSucceed && err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	} else if !shouldSucceed && err == nil {
-		t.Fatalf("expected error, but initialized successfully")
+	if shouldSucceed {
+		testutil.Check(t, err)
+	} else {
+		testutil.ExpectError(t, err)
 	}
 	return b
 }
@@ -221,10 +222,10 @@ func initBiome(t testing.TB, ctx context.Context, path string, shouldSucceed boo
 func load(t testing.TB, ctx context.Context, path string, shouldSucceed bool) Biome {
 	stubGitHub(t)
 	b, err := Load(ctx, path, biomeOptions()...)
-	if shouldSucceed && err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	} else if !shouldSucceed && err == nil {
-		t.Fatalf("expected biome to be invalid, but loaded successfully")
+	if shouldSucceed {
+		testutil.Check(t, err)
+	} else {
+		testutil.ExpectError(t, err)
 	}
 	return b
 }

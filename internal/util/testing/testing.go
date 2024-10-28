@@ -37,6 +37,14 @@ func Check(t testing.TB, err error) {
 	}
 }
 
+// ExpectError ensures that the given error is non-nil.
+func ExpectError(t testing.TB, err error) {
+	t.Helper()
+	if err == nil {
+		t.Errorf("expected error, but was nil")
+	}
+}
+
 // TempRepo returns a temporary directory that has a bare git repository
 // initialized. The directory will be cleaned up when the test completes.
 func TempRepo(t testing.TB) string {
