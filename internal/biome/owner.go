@@ -1,6 +1,7 @@
 package biome
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"path"
 	"strings"
@@ -74,4 +75,15 @@ func (o Owner) Name() string {
 
 func (o Owner) String() string {
 	return path.Join(o.host, o.name)
+}
+
+// RemoteGroup is the git remote group name for all remotes owned by this
+// owner.
+func (o Owner) RemoteGroup() string {
+	h := sha1.New()
+	_, err := h.Write([]byte(o.String()))
+	if err != nil {
+		panic(fmt.Errorf("could not determine git remote group name for %q: %w", o, err))
+	}
+	return fmt.Sprintf("g-%x", h.Sum(nil))
 }

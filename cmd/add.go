@@ -96,7 +96,11 @@ Examples:
 
 		// fetch remotes
 		if !skipFetch {
-			c := exec.CommandContext(ctx, "git", "fetch", "--all")
+			fetchArgs := []string{"fetch", "--multiple"}
+			for _, owner := range owners {
+				fetchArgs = append(fetchArgs, owner.RemoteGroup())
+			}
+			c := exec.CommandContext(ctx, "git", fetchArgs...)
 			c.Stdout = cmd.OutOrStdout()
 			c.Stderr = cmd.ErrOrStderr()
 			if err := c.Run(); err != nil {

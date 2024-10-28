@@ -345,6 +345,13 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectUnsupported(t, path, []string{
 		dotPrefixRemote.Name,
 	})
+	expectRemoteGroups(t, path, map[string][]string{
+		github_com_orirawlings.RemoteGroup(): {
+			barRemote.Name,
+			archivedRemote.Name,
+			headlessRemote.Name,
+		},
+	})
 
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
 	addOwners(t, ctx, b, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
@@ -380,6 +387,26 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectUnsupported(t, path, []string{
 		dotPrefixRemote.Name,
 	})
+	expectRemoteGroups(t, path, map[string][]string{
+		github_com_cli.RemoteGroup(): {
+			"github.com/cli/cli",
+		},
+		github_com_git.RemoteGroup(): {
+			"github.com/git/git",
+		},
+		github_com_kubernetes.RemoteGroup(): {
+			"github.com/kubernetes/community",
+			"github.com/kubernetes/kubernetes",
+		},
+		github_com_orirawlings.RemoteGroup(): {
+			barRemote.Name,
+			archivedRemote.Name,
+			headlessRemote.Name,
+		},
+		my_github_biz_foobar.RemoteGroup(): {
+			"my.github.biz/foobar/bazbiz",
+		},
+	})
 
 	// Remove all github.com/orirawlings repos except github.com/orirawlings/bar
 	updateStubbedGitHubRepositories(t, github_com_orirawlings, []repository{
@@ -406,6 +433,24 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectDisabled(t, path, nil)
 	expectLocked(t, path, nil)
 	expectUnsupported(t, path, nil)
+	expectRemoteGroups(t, path, map[string][]string{
+		github_com_cli.RemoteGroup(): {
+			"github.com/cli/cli",
+		},
+		github_com_git.RemoteGroup(): {
+			"github.com/git/git",
+		},
+		github_com_kubernetes.RemoteGroup(): {
+			"github.com/kubernetes/community",
+			"github.com/kubernetes/kubernetes",
+		},
+		github_com_orirawlings.RemoteGroup(): {
+			barRemote.Name,
+		},
+		my_github_biz_foobar.RemoteGroup(): {
+			"my.github.biz/foobar/bazbiz",
+		},
+	})
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
 	testutil.Check(t, b.UpdateRemotes(ctx))
@@ -423,6 +468,17 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectDisabled(t, path, nil)
 	expectLocked(t, path, nil)
 	expectUnsupported(t, path, nil)
+	expectRemoteGroups(t, path, map[string][]string{
+		github_com_cli.RemoteGroup(): {
+			"github.com/cli/cli",
+		},
+		github_com_git.RemoteGroup(): {
+			"github.com/git/git",
+		},
+		my_github_biz_foobar.RemoteGroup(): {
+			"my.github.biz/foobar/bazbiz",
+		},
+	})
 }
 
 func addOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
@@ -450,6 +506,13 @@ func expectRemotes(t *testing.T, path string, expected []string) {
 	expected = slices.Sorted(slices.Values(expected))
 	if !slices.Equal(remotes, expected) {
 		t.Errorf("unexpected remotes, wanted %v, was %v:", expected, remotes)
+	}
+}
+
+func expectRemoteGroups(t *testing.T, path string, expected map[string][]string) {
+	t.Helper()
+	for group, values := range expected {
+		expectRemotesForConfigKey(t, path, "remotes."+group, values)
 	}
 }
 

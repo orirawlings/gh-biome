@@ -348,6 +348,10 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 		}
 
 		gitRemoteSection := cfg.Section("remote")
+		gitRemotesSection := cfg.Section("remotes")
+
+		// clear all remote groups
+		gitRemotesSection.Options = nil
 
 		for _, ss := range gitRemoteSection.Subsections {
 			remotesToCleanUp[ss.Name] = struct{}{}
@@ -366,6 +370,8 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 			RemoveOption(unsupportedOpt)
 
 		for _, owner := range owners {
+			remoteGroup := owner.RemoteGroup()
+
 			remotes, err := b.buildRemotes(ctx, owner)
 			if err != nil {
 				return false, err
@@ -398,6 +404,7 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL)
 				gitRemoteSection.Subsection(r.Name).SetOption("fetch", refspec)
 				gitRemoteSection.Subsection(r.Name).SetOption("tagOpt", "--no-tags")
+				gitRemotesSection.AddOption(remoteGroup, r.Name)
 			}
 		}
 		return true, nil
