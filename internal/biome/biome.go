@@ -444,6 +444,10 @@ func (b *biome) setHeads(ctx context.Context, remotes []remote) error {
 }
 
 func (b *biome) cleanUpRemotes(ctx context.Context, remotesToCleanUp map[string]struct{}) error {
+	if len(remotesToCleanUp) == 0 {
+		return nil
+	}
+
 	w, err := b.updateRefs(ctx)
 	if err != nil {
 		return err

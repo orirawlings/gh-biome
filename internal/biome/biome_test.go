@@ -1,6 +1,7 @@
 package biome
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -329,6 +330,11 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	path := t.TempDir()
 	b := initBiome(t, ctx, path, true)
 
+	commitID := createCommitFor(t, ctx, path, []string{
+		barRemote.Head,
+		archivedRemote.Head,
+	})
+
 	// Add github.com/orirawlings
 	addOwners(t, ctx, b, github_com_orirawlings)
 	testutil.Check(t, b.UpdateRemotes(ctx))
@@ -359,6 +365,49 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 			archivedRemote.Name,
 			headlessRemote.Name,
 		},
+	})
+	expectRefs(t, ctx, path, []string{
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+	})
+
+	// should be idempotent
+	testutil.Check(t, b.UpdateRemotes(ctx))
+	expectRemotes(t, path, []string{
+		barRemote.Name,
+		archivedRemote.Name,
+		headlessRemote.Name,
+	})
+	expectActive(t, path, []string{
+		barRemote.Name,
+		headlessRemote.Name,
+	})
+	expectArchived(t, path, []string{
+		archivedRemote.Name,
+	})
+	expectDisabled(t, path, []string{
+		disabledRemote.Name,
+	})
+	expectLocked(t, path, []string{
+		lockedRemote.Name,
+	})
+	expectUnsupported(t, path, []string{
+		dotPrefixRemote.Name,
+	})
+	expectRemoteGroups(t, path, map[string][]string{
+		github_com_orirawlings.RemoteGroup(): {
+			barRemote.Name,
+			archivedRemote.Name,
+			headlessRemote.Name,
+		},
+	})
+	expectRefs(t, ctx, path, []string{
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
 	})
 
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
@@ -415,6 +464,12 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 			"my.github.biz/foobar/bazbiz",
 		},
 	})
+	expectRefs(t, ctx, path, []string{
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+	})
 
 	// Remove all github.com/orirawlings repos except github.com/orirawlings/bar
 	updateStubbedGitHubRepositories(t, github_com_orirawlings, []repository{
@@ -459,6 +514,10 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 			"my.github.biz/foobar/bazbiz",
 		},
 	})
+	expectRefs(t, ctx, path, []string{
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+	})
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
 	testutil.Check(t, b.UpdateRemotes(ctx))
@@ -487,6 +546,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 			"my.github.biz/foobar/bazbiz",
 		},
 	})
+	expectRefs(t, ctx, path, nil)
 }
 
 func addOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
@@ -573,6 +633,27 @@ func expectUnsupported(t *testing.T, path string, expected []string) {
 	expectRemotesForConfigKey(t, path, unsupportedKey, expected)
 }
 
+func expectRefs(t *testing.T, ctx context.Context, path string, expected []string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "for-each-ref", "--format=%(objectname) %(objecttype) %(refname) %(symref)")
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			t.Errorf("unexpected error exec'ing %q: %v\n\nstdout:\n%s\n\nstderr:\n%s\n", cmd, err, out, exitErr.Stderr)
+		} else {
+			t.Errorf("unexpected error exec'ing %q: %v", cmd, err)
+		}
+	}
+	actual := strings.Split(string(out), "\n")
+	if actual[len(actual)-1] == "" {
+		actual = actual[:len(actual)-1]
+	}
+	if !slices.Equal(actual, expected) {
+		t.Errorf("expected:\n%s\nwas:\n%s", strings.Join(expected, "\n"), strings.Join(actual, "\n"))
+	}
+}
+
 func stubGitHub(t testing.TB) {
 	const testGHConfig = `
 hosts:
@@ -644,4 +725,34 @@ func updateStubbedGitHubRepositories(t testing.TB, owner Owner, repos []reposito
 		  }
 		}
 	`, string(marshalled)))
+}
+
+// createCommitFor the given refs, to ensure that they resolve to a real git object
+func createCommitFor(t testing.TB, ctx context.Context, path string, refs []string) string {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "hash-object", "-t", "commit", "-w", "--stdin")
+	cmd.Stdin = bytes.NewReader([]byte(`tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+author A <a@example.com> 0 +0000
+committer C <c@example.com> 0 +0000
+
+initial commit
+`))
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			t.Errorf("unexpected error exec'ing %q: %v\n\nstdout:\n%s\n\nstderr:\n%s\n", cmd, err, out, exitErr.Stderr)
+		} else {
+			t.Errorf("unexpected error exec'ing %q: %v", cmd, err)
+		}
+	}
+	commitID := string(bytes.TrimSpace(out))
+	w, err := newRefUpdater(ctx, path)
+	testutil.Check(t, err)
+	for _, ref := range refs {
+		_, err := fmt.Fprintf(w, "update %s %s\n", ref, commitID)
+		testutil.Check(t, err)
+	}
+	testutil.Check(t, w.Close())
+	return commitID
 }
