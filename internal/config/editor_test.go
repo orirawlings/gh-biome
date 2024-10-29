@@ -57,9 +57,7 @@ func TestEditor(t *testing.T) {
 			c.Section(section).SetOption(sectionKey, expectedValue)
 			return true, editorErr
 		})
-		if err == nil {
-			t.Error("expected error, but was nil")
-		}
+		testutil.ExpectError(t, err)
 		if !errors.Is(err, editorErr) {
 			t.Error("expected error to wrap the editor's error, but did not")
 		}
