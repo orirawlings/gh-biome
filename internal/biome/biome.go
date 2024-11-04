@@ -511,7 +511,7 @@ func (b *biome) buildRemotes(ctx context.Context, owner Owner) ([]remote, error)
 					HasNextPage bool
 					EndCursor   string
 				}
-			} `graphql:"repositories(first: 100, after: $endCursor)"`
+			} `graphql:"repositories(first: 100, after: $endCursor, affiliations: [OWNER])"`
 		} `graphql:"repositoryOwner(login: $owner)"`
 	}
 	variables := map[string]interface{}{

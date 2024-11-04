@@ -697,7 +697,7 @@ hosts:
 		repositoriesStubs[o.String()] = gock.New(fmt.Sprintf("https://%s", host)).
 			Post("/graphql").
 			HeaderPresent("Authorization").
-			BodyString(fmt.Sprintf(`{"query":"query OwnerRepositories($endCursor:String$owner:String!){repositoryOwner(login: $owner){repositories(first: 100, after: $endCursor){nodes{isDisabled,isArchived,isLocked,url,defaultBranchRef{name,prefix}},pageInfo{hasNextPage,endCursor}}}}","variables":{"endCursor":null,"owner":%q}}`, o.Name())).
+			BodyString(fmt.Sprintf(`{"query":"query OwnerRepositories($endCursor:String$owner:String!){repositoryOwner(login: $owner){repositories(first: 100, after: $endCursor, affiliations: [OWNER]){nodes{isDisabled,isArchived,isLocked,url,defaultBranchRef{name,prefix}},pageInfo{hasNextPage,endCursor}}}}","variables":{"endCursor":null,"owner":%q}}`, o.Name())).
 			Persist().
 			Reply(200)
 
