@@ -14,11 +14,11 @@ func init() {
 
 var initCmd = &cobra.Command{
 	Use:   "init [<directory>]",
-	Short: "Initialize a new git-biome in the given directory",
+	Short: "Initialize a new git biome in the given directory",
 	Long: `
-Initialize a new git-biome in the given directory.
+Initialize a new git biome in the given directory.
 
-This will initialize a new, bare git repo in the directory with configuration settings tuned for git-biome support.
+This will initialize a new, bare git repo in the directory with configuration settings tuned for git biome support.
 `,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
