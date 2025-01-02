@@ -5,7 +5,7 @@ go 1.23.2
 require (
 	github.com/cli/go-gh/v2 v2.11.1
 	github.com/cli/shurcooL-graphql v0.0.4
-	github.com/go-git/go-git/v5 v5.13.0
+	github.com/go-git/go-git/v5 v5.13.1
 	github.com/spf13/cobra v1.8.1
 	google.golang.org/grpc v1.69.2
 	google.golang.org/protobuf v1.36.1
