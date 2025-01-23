@@ -5,7 +5,7 @@ go 1.23.2
 require (
 	github.com/cli/go-gh/v2 v2.11.2
 	github.com/cli/shurcooL-graphql v0.0.4
-	github.com/go-git/go-git/v5 v5.13.1
+	github.com/go-git/go-git/v5 v5.13.2
 	github.com/spf13/cobra v1.8.1
 	google.golang.org/grpc v1.69.2
 	google.golang.org/protobuf v1.36.2
@@ -26,9 +26,9 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thlib/go-timezone-local v0.0.0-20210907160436-ef149e42d28e // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
