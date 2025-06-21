@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	cmdutil "github.com/orirawlings/gh-biome/internal/util/command"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ is a GitHub user or organization.
 			return err
 		}
 		for _, owner := range owners {
-			cmd.Println(owner)
+			cmdutil.Println(cmd, owner)
 		}
 
 		return nil

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"testing"
 )
@@ -23,18 +24,28 @@ func TestListCmd_Execute(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command: %v", err)
 	}
+	expected := `github.com/cli
+github.com/orirawlings
+my.github.biz/foobar
+`
 
-	t.Run("list", func(t *testing.T) {
-		rootCmd.SetArgs([]string{"list"})
-		if err := rootCmd.Execute(); err != nil {
-			t.Fatalf("unexpected error executing command: %v", err)
-		}
-	})
-
-	t.Run("ls", func(t *testing.T) {
-		rootCmd.SetArgs([]string{"ls"})
-		if err := rootCmd.Execute(); err != nil {
-			t.Fatalf("unexpected error executing command: %v", err)
-		}
-	})
+	for _, name := range []string{
+		"list",
+		"ls",
+	} {
+		t.Run(name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			listCmd.SetOut(buf)
+			t.Cleanup(func() {
+				listCmd.SetOut(nil)
+			})
+			rootCmd.SetArgs([]string{name})
+			if err := rootCmd.Execute(); err != nil {
+				t.Fatalf("unexpected error executing command: %v", err)
+			}
+			if buf.String() != expected {
+				t.Errorf("expected %q, got %q", expected, buf.String())
+			}
+		})
+	}
 }
