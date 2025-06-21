@@ -153,7 +153,10 @@ func TestInit(t *testing.T) {
 	path := t.TempDir()
 
 	t.Run("new biome", func(t *testing.T) {
-		initBiome(t, ctx, path, true)
+		b := initBiome(t, ctx, path, true)
+		if b.Path() != path {
+			t.Fatalf("expected biome path %q, got %q", path, b.Path())
+		}
 
 		testutil.Execute(t, "git", "-C", path, "fsck")
 
@@ -193,7 +196,10 @@ func TestLoad(t *testing.T) {
 	t.Run("newly initialized biome", func(t *testing.T) {
 		path := t.TempDir()
 		initBiome(t, ctx, path, true)
-		load(t, ctx, path, true)
+		b := load(t, ctx, path, true)
+		if b.Path() != path {
+			t.Fatalf("expected biome path %q, got %q", path, b.Path())
+		}
 	})
 
 	t.Run("repo with bad biome version", func(t *testing.T) {

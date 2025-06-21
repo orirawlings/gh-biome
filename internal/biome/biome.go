@@ -109,6 +109,9 @@ var (
 // Biome is a local git repository that aggregates the objects and references
 // of many other remote git repositories.
 type Biome interface {
+	// Path returns the filesystem path to the biome's git repository.
+	Path() string
+
 	// AddOwners records that the given GitHub repository owners have joined the
 	// git biome. An owner should be added to the biome before any of the owner's
 	// repositories can be added as remotes.
@@ -133,6 +136,11 @@ type Biome interface {
 type biome struct {
 	path          string
 	editorOptions []config.EditorOption
+}
+
+// Path returns the filesystem path to the biome's git repository.
+func (b *biome) Path() string {
+	return b.path
 }
 
 // Init initializes a new git biome at the given filesystem directory path.
