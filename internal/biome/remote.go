@@ -74,6 +74,56 @@ func (r Remote) Supported() bool {
 	return err == nil
 }
 
+// RemoteCategory represents the category of a remote repository in GitHub.
+// Remote repositories can be categorized into one or more categories depending on
+// their state in GitHub. The category is used to determine how the remote
+// repository should be handled in the configuration, such as whether it can be
+// fetched from, or if it should be skipped during configuration setup. RemoteCategory
+// values can be used to filter queries for remotes configured in the biome.
+type RemoteCategory string
+
+const (
+	// Active indicates that the remote repository is active in GitHub,
+	// able to be updated and fetched from.
+	// This is the default category for remotes that are not archived,
+	// disabled, locked, or unsupported.
+	Active RemoteCategory = "active"
+
+	// Archived indicates that the remote repository is archived in GitHub,
+	// disabled from receiving new content.
+	// https://docs.github.com/en/repositories/archiving-a-github-repository
+	Archived RemoteCategory = "archived"
+
+	// Disabled indicates that the remote repository is disabled in GitHub,
+	// unable to be updated. This seems to be a rare and undocumented
+	// condition for GitHub repositories. Disabled repositories cannot be
+	// fetched.
+	Disabled RemoteCategory = "disabled"
+
+	// Locked indicates that the remote repository is locked in GitHub,
+	// disabled from any updates, usually because the repository has been
+	// migrated to a different git forge. Locked repositories cannot be
+	// fetched.
+	// https://docs.github.com/en/migrations/overview/about-locked-repositories
+	Locked RemoteCategory = "locked"
+
+	// Unsupported indicates that the remote configuration is currently unsupported
+	// by this tool. Unsupported remotes are skipped during remote configuration
+	// setup, but are still recorded in the configuration for reference.
+	Unsupported RemoteCategory = "unsupported"
+)
+
+var (
+	// AllRemoteCategories is a list of all remote categories.
+	AllRemoteCategories = []RemoteCategory{
+		Active,
+		Archived,
+		Disabled,
+		Locked,
+		Unsupported,
+	}
+)
+
 type remoteConfig struct {
 	Remote Remote
 	Head   string

@@ -357,23 +357,23 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		headlessRemote,
 		dotPrefixRemote,
 	})
-	expectActive(t, path, []string{
-		barRemote.Name,
-		headlessRemote.Name,
+	expectActive(t, ctx, b, []Remote{
+		barRemote,
+		headlessRemote,
 	})
-	expectArchived(t, path, []string{
-		archivedRemote.Name,
+	expectArchived(t, ctx, b, []Remote{
+		archivedRemote,
 	})
-	expectDisabled(t, path, []string{
-		disabledRemote.Name,
+	expectDisabled(t, ctx, b, []Remote{
+		disabledRemote,
 	})
-	expectLocked(t, path, []string{
-		lockedRemote.Name,
+	expectLocked(t, ctx, b, []Remote{
+		lockedRemote,
 	})
-	expectUnsupported(t, path, []string{
-		dotPrefixRemote.Name,
+	expectUnsupported(t, ctx, b, []Remote{
+		dotPrefixRemote,
 	})
-	expectRemoteGroups(t, path, map[string][]string{
+	expectGitRemoteGroups(t, path, map[string][]string{
 		github_com_orirawlings.RemoteGroup(): {
 			barRemote.Name,
 			archivedRemote.Name,
@@ -402,23 +402,23 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		headlessRemote,
 		dotPrefixRemote,
 	})
-	expectActive(t, path, []string{
-		barRemote.Name,
-		headlessRemote.Name,
+	expectActive(t, ctx, b, []Remote{
+		barRemote,
+		headlessRemote,
 	})
-	expectArchived(t, path, []string{
-		archivedRemote.Name,
+	expectArchived(t, ctx, b, []Remote{
+		archivedRemote,
 	})
-	expectDisabled(t, path, []string{
-		disabledRemote.Name,
+	expectDisabled(t, ctx, b, []Remote{
+		disabledRemote,
 	})
-	expectLocked(t, path, []string{
-		lockedRemote.Name,
+	expectLocked(t, ctx, b, []Remote{
+		lockedRemote,
 	})
-	expectUnsupported(t, path, []string{
-		dotPrefixRemote.Name,
+	expectUnsupported(t, ctx, b, []Remote{
+		dotPrefixRemote,
 	})
-	expectRemoteGroups(t, path, map[string][]string{
+	expectGitRemoteGroups(t, path, map[string][]string{
 		github_com_orirawlings.RemoteGroup(): {
 			barRemote.Name,
 			archivedRemote.Name,
@@ -458,28 +458,28 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		dotPrefixRemote,
 		myGithubBizFoobarBazbizRemote,
 	})
-	expectActive(t, path, []string{
-		githubCLICLIRemote.Name,
-		githubGitGitRemote.Name,
-		githubKubernetesCommunityRemote.Name,
-		githubKubernetesKubernetesRemote.Name,
-		barRemote.Name,
-		headlessRemote.Name,
-		myGithubBizFoobarBazbizRemote.Name,
+	expectActive(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		headlessRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
-	expectArchived(t, path, []string{
-		archivedRemote.Name,
+	expectArchived(t, ctx, b, []Remote{
+		archivedRemote,
 	})
-	expectDisabled(t, path, []string{
-		disabledRemote.Name,
+	expectDisabled(t, ctx, b, []Remote{
+		disabledRemote,
 	})
-	expectLocked(t, path, []string{
-		lockedRemote.Name,
+	expectLocked(t, ctx, b, []Remote{
+		lockedRemote,
 	})
-	expectUnsupported(t, path, []string{
-		dotPrefixRemote.Name,
+	expectUnsupported(t, ctx, b, []Remote{
+		dotPrefixRemote,
 	})
-	expectRemoteGroups(t, path, map[string][]string{
+	expectGitRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
 			githubCLICLIRemote.Name,
 		},
@@ -527,19 +527,19 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		barRemote,
 		myGithubBizFoobarBazbizRemote,
 	})
-	expectActive(t, path, []string{
-		githubCLICLIRemote.Name,
-		githubGitGitRemote.Name,
-		githubKubernetesCommunityRemote.Name,
-		githubKubernetesKubernetesRemote.Name,
-		barRemote.Name,
-		myGithubBizFoobarBazbizRemote.Name,
+	expectActive(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
-	expectArchived(t, path, nil)
-	expectDisabled(t, path, nil)
-	expectLocked(t, path, nil)
-	expectUnsupported(t, path, nil)
-	expectRemoteGroups(t, path, map[string][]string{
+	expectArchived(t, ctx, b, nil)
+	expectDisabled(t, ctx, b, nil)
+	expectLocked(t, ctx, b, nil)
+	expectUnsupported(t, ctx, b, nil)
+	expectGitRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
 			githubCLICLIRemote.Name,
 		},
@@ -574,16 +574,16 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		githubGitGitRemote,
 		myGithubBizFoobarBazbizRemote,
 	})
-	expectActive(t, path, []string{
-		githubCLICLIRemote.Name,
-		githubGitGitRemote.Name,
-		myGithubBizFoobarBazbizRemote.Name,
+	expectActive(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
-	expectArchived(t, path, nil)
-	expectDisabled(t, path, nil)
-	expectLocked(t, path, nil)
-	expectUnsupported(t, path, nil)
-	expectRemoteGroups(t, path, map[string][]string{
+	expectArchived(t, ctx, b, nil)
+	expectDisabled(t, ctx, b, nil)
+	expectLocked(t, ctx, b, nil)
+	expectUnsupported(t, ctx, b, nil)
+	expectGitRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
 			githubCLICLIRemote.Name,
 		},
@@ -595,6 +595,85 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		},
 	})
 	expectRefs(t, ctx, path, nil)
+}
+
+func TestBiome_Remotes(t *testing.T) {
+	ctx := context.Background()
+	path := t.TempDir()
+	b := initBiome(t, ctx, path, true)
+
+	// querying without categories should fail
+	_, err := b.Remotes(ctx, nil)
+	testutil.ExpectError(t, err)
+
+	expectGitRemotes(t, b, nil)
+	expectBiomeRemotes(t, ctx, b, nil)
+	expectActive(t, ctx, b, nil)
+	expectArchived(t, ctx, b, nil)
+	expectDisabled(t, ctx, b, nil)
+	expectLocked(t, ctx, b, nil)
+	expectUnsupported(t, ctx, b, nil)
+
+	// Adding owners shouldn't cause remotes to be updated
+	addOwners(t, ctx, b, github_com_orirawlings, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
+	expectGitRemotes(t, b, nil)
+	expectBiomeRemotes(t, ctx, b, nil)
+	expectActive(t, ctx, b, nil)
+	expectArchived(t, ctx, b, nil)
+	expectDisabled(t, ctx, b, nil)
+	expectLocked(t, ctx, b, nil)
+	expectUnsupported(t, ctx, b, nil)
+
+	// Updating remotes should cause remotes to be added
+	testutil.Check(t, b.UpdateRemotes(ctx))
+	expectGitRemotes(t, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		archivedRemote,
+		headlessRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
+		dotPrefixRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectActive(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		headlessRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectArchived(t, ctx, b, []Remote{
+		archivedRemote,
+	})
+	expectDisabled(t, ctx, b, []Remote{
+		disabledRemote,
+	})
+	expectLocked(t, ctx, b, []Remote{
+		lockedRemote,
+	})
+	expectUnsupported(t, ctx, b, []Remote{
+		dotPrefixRemote,
+	})
+
+	// querying without categories should fail
+	_, err = b.Remotes(ctx, nil)
+	testutil.ExpectError(t, err)
 }
 
 func addOwners(t *testing.T, ctx context.Context, b Biome, owners ...Owner) {
@@ -625,7 +704,11 @@ func expectGitRemotes(t *testing.T, b Biome, expected []Remote) {
 	for _, r := range expected {
 		expectedNames = append(expectedNames, r.Name)
 	}
-	gitRemotes := strings.Split(strings.TrimSpace(testutil.Execute(t, "git", "-C", b.Path(), "remote")), "\n")
+	out := strings.TrimSpace(testutil.Execute(t, "git", "-C", b.Path(), "remote"))
+	var gitRemotes []string
+	if out != "" {
+		gitRemotes = strings.Split(out, "\n")
+	}
 	if !slices.Equal(gitRemotes, expectedNames) {
 		t.Errorf("unexpected git remotes, wanted %v, was %v:", expected, gitRemotes)
 	}
@@ -636,14 +719,14 @@ func expectBiomeRemotes(t *testing.T, ctx context.Context, b Biome, expected []R
 	slices.SortFunc(expected, func(a, b Remote) int {
 		return strings.Compare(a.Name, b.Name)
 	})
-	remotes, err := b.Remotes(ctx)
+	remotes, err := b.Remotes(ctx, AllRemoteCategories)
 	testutil.Check(t, err)
 	if !slices.Equal(remotes, expected) {
 		t.Errorf("unexpected biome remotes, wanted %v, was %v:", expected, remotes)
 	}
 }
 
-func expectRemoteGroups(t *testing.T, path string, expected map[string][]string) {
+func expectGitRemoteGroups(t *testing.T, path string, expected map[string][]string) {
 	t.Helper()
 	for group, values := range expected {
 		expectRemotesForConfigKey(t, path, "remotes."+group, values)
@@ -674,29 +757,44 @@ func expectRemotesForConfigKey(t *testing.T, path, key string, expected []string
 	}
 }
 
-func expectActive(t *testing.T, path string, expected []string) {
+func expectCategory(t *testing.T, ctx context.Context, b Biome, category RemoteCategory, expected []Remote) {
 	t.Helper()
-	expectRemotesForConfigKey(t, path, activeKey, expected)
+	remotes, err := b.Remotes(ctx, []RemoteCategory{category})
+	testutil.Check(t, err)
+	if !slices.Equal(remotes, expected) {
+		t.Errorf("unexpected remotes for category %q, wanted %v, was %v:", category, expected, remotes)
+	}
+	var expectedNames []string
+	for _, r := range expected {
+		expectedNames = append(expectedNames, r.Name)
+	}
+	key := strings.Join([]string{section, remotesSubsection, string(category)}, ".")
+	expectRemotesForConfigKey(t, b.Path(), key, expectedNames)
 }
 
-func expectArchived(t *testing.T, path string, expected []string) {
+func expectActive(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
 	t.Helper()
-	expectRemotesForConfigKey(t, path, archivedKey, expected)
+	expectCategory(t, ctx, b, Active, expected)
 }
 
-func expectDisabled(t *testing.T, path string, expected []string) {
+func expectArchived(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
 	t.Helper()
-	expectRemotesForConfigKey(t, path, disabledKey, expected)
+	expectCategory(t, ctx, b, Archived, expected)
 }
 
-func expectLocked(t *testing.T, path string, expected []string) {
+func expectDisabled(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
 	t.Helper()
-	expectRemotesForConfigKey(t, path, lockedKey, expected)
+	expectCategory(t, ctx, b, Disabled, expected)
 }
 
-func expectUnsupported(t *testing.T, path string, expected []string) {
+func expectLocked(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
 	t.Helper()
-	expectRemotesForConfigKey(t, path, unsupportedKey, expected)
+	expectCategory(t, ctx, b, Locked, expected)
+}
+
+func expectUnsupported(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
+	t.Helper()
+	expectCategory(t, ctx, b, Unsupported, expected)
 }
 
 func expectRefs(t *testing.T, ctx context.Context, path string, expected []string) {

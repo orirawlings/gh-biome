@@ -53,48 +53,23 @@ const (
 	// - is not locked
 	// - is not disabled
 	// - is otherwise supported by biome
-	activeOpt = "active"
-
-	// activeKey is a git config key that lists GitHub remote
-	// repositories that are active, meaning the remote repository:
-	//
-	// - is not archived
-	// - is not locked
-	// - is not disabled
-	// - is otherwise supported by biome
-	activeKey = section + "." + remotesSubsection + "." + activeOpt
+	activeOpt = string(Active)
 
 	// archivedOpt is a git config option key which lists GitHub remote
 	// repositories that are archived.
-	archivedOpt = "archived"
-
-	// archivedKey is a git config key which lists GitHub remote repositories
-	// that are archived.
-	archivedKey = section + "." + remotesSubsection + "." + archivedOpt
+	archivedOpt = string(Archived)
 
 	// disabledOpt is a git config option key which lists GitHub remote
 	// repositories that are disabled.
-	disabledOpt = "disabled"
-
-	// disabledKey is a git config key which lists GitHub remote repositories
-	// that are disabled.
-	disabledKey = section + "." + remotesSubsection + "." + disabledOpt
+	disabledOpt = string(Disabled)
 
 	// lockedOpt is a git config option key which lists GitHub remote
 	// repositories that are locked.
-	lockedOpt = "locked"
-
-	// lockedKey is a git config key which lists GitHub remote repositories
-	// that are locked.
-	lockedKey = section + "." + remotesSubsection + "." + lockedOpt
+	lockedOpt = string(Locked)
 
 	// unsupportedOpt is a git config option key which lists GitHub remote
 	// repositories that are not currently supported by biome.
-	unsupportedOpt = "unsupported"
-
-	// unsupportedKey is a git config key which lists GitHub remote repositories
-	// that are not currently supported by biome.
-	unsupportedKey = section + "." + remotesSubsection + "." + unsupportedOpt
+	unsupportedOpt = string(Unsupported)
 )
 
 var (
@@ -104,6 +79,10 @@ var (
 	// errVersionNotSet indicates that a git repository has not been
 	// initialized as a git biome.
 	errVersionNotSet = errors.New("biome config version not set")
+
+	// errEmptyCategories indicates that at least one remote category must be
+	// specified when querying for remotes.
+	errEmptyCategories = errors.New("at least one remote category must be specified")
 )
 
 // Biome is a local git repository that aggregates the objects and references
@@ -126,8 +105,12 @@ type Biome interface {
 	// biome.
 	Owners(context.Context) ([]Owner, error)
 
-	// Remotes returns all remotes currently configured on the biome.
-	Remotes(context.Context) ([]Remote, error)
+	// Remotes returns all remotes currently discovered by the biome. Only
+	// discovered remotes that are categorized into at least one of the given
+	// categories will be returned. Not all remote categories are eligible to
+	// be configured as git remotes as some categories represent repositories
+	// that cannot be fetched or updated on Github.
+	Remotes(context.Context, []RemoteCategory) ([]Remote, error)
 
 	// UpdateRemotes syncs the git remote configurations. All repositories
 	// owned by the biome's owners will be configured as remotes. Any other
@@ -342,33 +325,55 @@ func (b *biome) getOwners(cfg *config.Config) ([]Owner, error) {
 	return owners, errs
 }
 
-// Remotes returns all remotes currently configured on the biome.
-func (b *biome) Remotes(ctx context.Context) ([]Remote, error) {
-	var result []Remote
-	byName := make(map[string]*Remote)
+// Remotes returns all remotes currently discovered by the biome. Only
+// discovered remotes that are categorized into at least one of the given
+// categories will be returned. Not all remote categories are eligible to
+// be configured as git remotes as some categories represent repositories
+// that cannot be fetched or updated on Github.
+func (b *biome) Remotes(ctx context.Context, categories []RemoteCategory) ([]Remote, error) {
+	if len(categories) == 0 {
+		return nil, errEmptyCategories
+	}
+	type result struct {
+		matches bool
+		remote  Remote
+	}
+	byName := make(map[string]*result)
 	err := b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
 		biomeRemotesSubsection := cfg.Section(section).Subsection(remotesSubsection)
 		for _, opt := range biomeRemotesSubsection.Options {
 			name := opt.Value
 			if _, ok := byName[name]; !ok {
-				result = append(result, Remote{
-					Name: name,
-				})
-				byName[name] = &result[len(result)-1]
+				byName[name] = &result{
+					matches: false,
+					remote: Remote{
+						Name: name,
+					},
+				}
 			}
 			switch opt.Key {
 			case activeOpt:
 			case archivedOpt:
-				byName[name].Archived = true
+				byName[name].remote.Archived = true
 			case disabledOpt:
-				byName[name].Disabled = true
+				byName[name].remote.Disabled = true
 			case lockedOpt:
-				byName[name].Locked = true
+				byName[name].remote.Locked = true
 			}
+			byName[name].matches = byName[name].matches || slices.Contains(categories, RemoteCategory(opt.Key))
 		}
 		return false, nil
 	})
-	return result, err
+	var remotes []Remote
+	for _, r := range byName {
+		if r.matches {
+			remotes = append(remotes, r.remote)
+		}
+	}
+	slices.SortFunc(remotes, func(a, b Remote) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return remotes, err
 }
 
 // UpdateRemotes syncs the git remote configurations. All repositories
