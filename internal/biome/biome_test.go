@@ -603,7 +603,7 @@ func TestBiome_Remotes(t *testing.T) {
 	b := initBiome(t, ctx, path, true)
 
 	// querying without categories should fail
-	_, err := b.Remotes(ctx, nil)
+	_, err := b.Remotes(ctx)
 	testutil.ExpectError(t, err)
 
 	expectGitRemotes(t, b, nil)
@@ -672,7 +672,7 @@ func TestBiome_Remotes(t *testing.T) {
 	})
 
 	// querying without categories should fail
-	_, err = b.Remotes(ctx, nil)
+	_, err = b.Remotes(ctx)
 	testutil.ExpectError(t, err)
 }
 
@@ -719,7 +719,7 @@ func expectBiomeRemotes(t *testing.T, ctx context.Context, b Biome, expected []R
 	slices.SortFunc(expected, func(a, b Remote) int {
 		return strings.Compare(a.Name, b.Name)
 	})
-	remotes, err := b.Remotes(ctx, AllRemoteCategories)
+	remotes, err := b.Remotes(ctx, AllRemoteCategories...)
 	testutil.Check(t, err)
 	if !slices.Equal(remotes, expected) {
 		t.Errorf("unexpected biome remotes, wanted %v, was %v:", expected, remotes)
@@ -759,7 +759,7 @@ func expectRemotesForConfigKey(t *testing.T, path, key string, expected []string
 
 func expectCategory(t *testing.T, ctx context.Context, b Biome, category RemoteCategory, expected []Remote) {
 	t.Helper()
-	remotes, err := b.Remotes(ctx, []RemoteCategory{category})
+	remotes, err := b.Remotes(ctx, category)
 	testutil.Check(t, err)
 	if !slices.Equal(remotes, expected) {
 		t.Errorf("unexpected remotes for category %q, wanted %v, was %v:", category, expected, remotes)

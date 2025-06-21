@@ -110,7 +110,7 @@ type Biome interface {
 	// categories will be returned. Not all remote categories are eligible to
 	// be configured as git remotes as some categories represent repositories
 	// that cannot be fetched or updated on Github.
-	Remotes(context.Context, []RemoteCategory) ([]Remote, error)
+	Remotes(context.Context, ...RemoteCategory) ([]Remote, error)
 
 	// UpdateRemotes syncs the git remote configurations. All repositories
 	// owned by the biome's owners will be configured as remotes. Any other
@@ -330,7 +330,7 @@ func (b *biome) getOwners(cfg *config.Config) ([]Owner, error) {
 // categories will be returned. Not all remote categories are eligible to
 // be configured as git remotes as some categories represent repositories
 // that cannot be fetched or updated on Github.
-func (b *biome) Remotes(ctx context.Context, categories []RemoteCategory) ([]Remote, error) {
+func (b *biome) Remotes(ctx context.Context, categories ...RemoteCategory) ([]Remote, error) {
 	if len(categories) == 0 {
 		return nil, errEmptyCategories
 	}
