@@ -345,7 +345,7 @@ func (b *biome) getOwners(cfg *config.Config) ([]Owner, error) {
 // as well.
 func (b *biome) UpdateRemotes(ctx context.Context) error {
 	remotesToCleanUp := make(map[string]struct{})
-	var addedRemotes []remote
+	var addedRemoteCfgs []remoteConfig
 
 	if err := b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
 		owners, err := b.getOwners(cfg)
@@ -378,39 +378,39 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 		for _, owner := range owners {
 			remoteGroup := owner.RemoteGroup()
 
-			remotes, err := b.buildRemotes(ctx, owner)
+			remoteCfgs, err := b.buildRemoteConfigs(ctx, owner)
 			if err != nil {
 				return false, err
 			}
-			for _, r := range remotes {
-				if r.Disabled {
-					biomeRemotesSubsection.AddOption(disabledOpt, r.Name)
+			for _, r := range remoteCfgs {
+				if r.Remote.Disabled {
+					biomeRemotesSubsection.AddOption(disabledOpt, r.Remote.Name)
 					continue
 				}
-				if r.Locked {
-					biomeRemotesSubsection.AddOption(lockedOpt, r.Name)
+				if r.Remote.Locked {
+					biomeRemotesSubsection.AddOption(lockedOpt, r.Remote.Name)
 					continue
 				}
-				refspec, err := r.FetchRefspec()
+				refspec, err := r.Remote.FetchRefspec()
 				if err != nil {
 					// TODO (orirawlings): Handle this sensibly. Log that remote is not supported?
-					biomeRemotesSubsection.AddOption(unsupportedOpt, r.Name)
+					biomeRemotesSubsection.AddOption(unsupportedOpt, r.Remote.Name)
 					continue
 				}
 
-				if r.Archived {
-					biomeRemotesSubsection.AddOption(archivedOpt, r.Name)
+				if r.Remote.Archived {
+					biomeRemotesSubsection.AddOption(archivedOpt, r.Remote.Name)
 				} else {
-					biomeRemotesSubsection.AddOption(activeOpt, r.Name)
+					biomeRemotesSubsection.AddOption(activeOpt, r.Remote.Name)
 				}
 
 				// Add remote
-				delete(remotesToCleanUp, r.Name)
-				addedRemotes = append(addedRemotes, r)
-				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL())
-				gitRemoteSection.Subsection(r.Name).SetOption("fetch", refspec)
-				gitRemoteSection.Subsection(r.Name).SetOption("tagOpt", "--no-tags")
-				gitRemotesSection.AddOption(remoteGroup, r.Name)
+				delete(remotesToCleanUp, r.Remote.Name)
+				addedRemoteCfgs = append(addedRemoteCfgs, r)
+				gitRemoteSection.Subsection(r.Remote.Name).SetOption("url", r.Remote.FetchURL())
+				gitRemoteSection.Subsection(r.Remote.Name).SetOption("fetch", refspec)
+				gitRemoteSection.Subsection(r.Remote.Name).SetOption("tagOpt", "--no-tags")
+				gitRemotesSection.AddOption(remoteGroup, r.Remote.Name)
 			}
 		}
 		return true, nil
@@ -418,7 +418,7 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 		return fmt.Errorf("could not update remote configurations: %w", err)
 	}
 
-	if err := b.setHeads(ctx, addedRemotes); err != nil {
+	if err := b.setHeads(ctx, addedRemoteCfgs); err != nil {
 		return fmt.Errorf("could not set HEAD references for remotes: %w", err)
 	}
 
@@ -429,21 +429,21 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 	return nil
 }
 
-func (b *biome) setHeads(ctx context.Context, remotes []remote) error {
+func (b *biome) setHeads(ctx context.Context, remoteCfgs []remoteConfig) error {
 	w, err := b.updateRefs(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, r := range remotes {
-		head := fmt.Sprintf("refs/remotes/%s/HEAD", r.Name)
+	for _, r := range remoteCfgs {
+		head := fmt.Sprintf("refs/remotes/%s/HEAD", r.Remote.Name)
 		if r.Head == "" {
 			if _, err := fmt.Fprintf(w, "option no-deref\nsymref-delete %s\n", head); err != nil {
-				return fmt.Errorf("could not delete HEAD ref for %s: %w", r.Name, err)
+				return fmt.Errorf("could not delete HEAD ref for %s: %w", r.Remote.Name, err)
 			}
 		} else {
 			if _, err := fmt.Fprintf(w, "option no-deref\nsymref-update %s %s\n", head, r.Head); err != nil {
-				return fmt.Errorf("could not update HEAD ref for %s: %w", r.Name, err)
+				return fmt.Errorf("could not update HEAD ref for %s: %w", r.Remote.Name, err)
 			}
 		}
 	}
@@ -504,7 +504,7 @@ func (b *biome) getConfig(ctx context.Context, key string) (string, error) {
 	return string(bytes.TrimSpace(out)), nil
 }
 
-func (b *biome) buildRemotes(ctx context.Context, owner Owner) ([]remote, error) {
+func (b *biome) buildRemoteConfigs(ctx context.Context, owner Owner) ([]remoteConfig, error) {
 	client, err := api.NewGraphQLClient(api.ClientOptions{
 		Host: owner.Host(),
 	})
@@ -526,23 +526,23 @@ func (b *biome) buildRemotes(ctx context.Context, owner Owner) ([]remote, error)
 		"owner":     graphql.String(owner.name),
 		"endCursor": (*graphql.String)(nil),
 	}
-	var remotes []remote
+	var remoteCfgs []remoteConfig
 	for {
 		if err := client.QueryWithContext(ctx, "OwnerRepositories", &query, variables); err != nil {
-			return remotes, fmt.Errorf("could not query repos for %s: %w", owner, err)
+			return remoteCfgs, fmt.Errorf("could not query repos for %s: %w", owner, err)
 		}
 		for _, repo := range query.RepositoryOwner.Repositories.Nodes {
-			remotes = append(remotes, repo.Remote())
+			remoteCfgs = append(remoteCfgs, repo.Remote())
 		}
 		if !query.RepositoryOwner.Repositories.PageInfo.HasNextPage {
 			break
 		}
 		variables["endCursor"] = graphql.String(query.RepositoryOwner.Repositories.PageInfo.EndCursor)
 	}
-	slices.SortFunc(remotes, func(a, b remote) int {
-		return strings.Compare(a.Name, b.Name)
+	slices.SortFunc(remoteCfgs, func(a, b remoteConfig) int {
+		return strings.Compare(a.Remote.Name, b.Remote.Name)
 	})
-	return remotes, nil
+	return remoteCfgs, nil
 }
 
 type BiomeOption func(*biome)
@@ -568,17 +568,24 @@ type repository struct {
 	DefaultBranchRef *ref
 }
 
-func (r repository) Remote() remote {
-	remote := remote{
-		Name:     r.URL[8:],
-		Archived: r.IsArchived,
-		Disabled: r.IsDisabled,
-		Locked:   r.IsLocked,
+func (r repository) Remote() remoteConfig {
+	remoteCfg := remoteConfig{
+		Remote: remote{
+			Name:     r.URL[8:],
+			Archived: r.IsArchived,
+			Disabled: r.IsDisabled,
+			Locked:   r.IsLocked,
+		},
 	}
 	if r.DefaultBranchRef != nil {
-		remote.Head = path.Join("refs/remotes/", remote.Name, strings.TrimPrefix(r.DefaultBranchRef.Prefix, "refs/"), r.DefaultBranchRef.Name)
+		remoteCfg.Head = path.Join(
+			"refs/remotes/",
+			remoteCfg.Remote.Name,
+			strings.TrimPrefix(r.DefaultBranchRef.Prefix, "refs/"),
+			r.DefaultBranchRef.Name,
+		)
 	}
-	return remote
+	return remoteCfg
 }
 
 type refUpdater struct {

@@ -31,10 +31,6 @@ type remote struct {
 	// fetched.
 	// https://docs.github.com/en/migrations/overview/about-locked-repositories
 	Locked bool
-
-	// Head is the target git reference in the biome repository that this
-	// remote's symbolic HEAD reference should point to.
-	Head string
 }
 
 func (r remote) String() string {
@@ -76,4 +72,9 @@ func (r remote) FetchRefspec() (string, error) {
 func (r remote) Supported() bool {
 	_, err := r.FetchRefspec()
 	return err == nil
+}
+
+type remoteConfig struct {
+	Remote remote
+	Head   string
 }

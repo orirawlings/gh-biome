@@ -337,8 +337,8 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	b := initBiome(t, ctx, path, true)
 
 	commitID := createCommitFor(t, ctx, path, []string{
-		barRemote.Head,
-		archivedRemote.Head,
+		barRemoteCfg.Head,
+		archivedRemoteCfg.Head,
 	})
 
 	// Add github.com/orirawlings
@@ -373,10 +373,10 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		},
 	})
 	expectRefs(t, ctx, path, []string{
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemoteCfg.Head),
 	})
 
 	// should be idempotent
@@ -410,10 +410,10 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		},
 	})
 	expectRefs(t, ctx, path, []string{
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemoteCfg.Head),
 	})
 
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
@@ -471,10 +471,10 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		},
 	})
 	expectRefs(t, ctx, path, []string{
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, archivedRemote.Head),
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/archived/HEAD %s`, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, archivedRemoteCfg.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemoteCfg.Head),
 	})
 
 	// Remove all github.com/orirawlings repos except github.com/orirawlings/bar
@@ -521,8 +521,8 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		},
 	})
 	expectRefs(t, ctx, path, []string{
-		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemote.Head),
-		fmt.Sprintf(`%s commit %s `, commitID, barRemote.Head),
+		fmt.Sprintf(`%s commit refs/remotes/github.com/orirawlings/bar/HEAD %s`, commitID, barRemoteCfg.Head),
+		fmt.Sprintf(`%s commit %s `, commitID, barRemoteCfg.Head),
 	})
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)

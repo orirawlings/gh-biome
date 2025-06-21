@@ -7,29 +7,50 @@ import (
 var (
 	barRemote = remote{
 		Name: "github.com/orirawlings/bar",
-		Head: "refs/remotes/github.com/orirawlings/bar/heads/main",
 	}
 	archivedRemote = remote{
 		Name:     "github.com/orirawlings/archived",
 		Archived: true,
-		Head:     "refs/remotes/github.com/orirawlings/archived/heads/master",
 	}
 	disabledRemote = remote{
 		Name:     "github.com/orirawlings/disabled",
 		Disabled: true,
-		Head:     "refs/remotes/github.com/orirawlings/disabled/heads/main",
 	}
 	lockedRemote = remote{
 		Name:     "github.com/orirawlings/locked",
 		Disabled: true,
-		Head:     "refs/remotes/github.com/orirawlings/locked/heads/main",
 	}
 	headlessRemote = remote{
 		Name: "github.com/orirawlings/headless",
 	}
 	dotPrefixRemote = remote{
 		Name: "github.com/orirawlings/.github",
-		Head: "refs/remotes/github.com/orirawlings/.github/heads/main",
+	}
+)
+
+var (
+	barRemoteCfg = remoteConfig{
+		Remote: barRemote,
+		Head:   "refs/remotes/github.com/orirawlings/bar/heads/main",
+	}
+	archivedRemoteCfg = remoteConfig{
+		Remote: archivedRemote,
+		Head:   "refs/remotes/github.com/orirawlings/archived/heads/master",
+	}
+	disabledRemoteCfg = remoteConfig{
+		Remote: disabledRemote,
+		Head:   "refs/remotes/github.com/orirawlings/disabled/heads/main",
+	}
+	lockedRemoteCfg = remoteConfig{
+		Remote: lockedRemote,
+		Head:   "refs/remotes/github.com/orirawlings/locked/heads/main",
+	}
+	headlessRemoteCfg = remoteConfig{
+		Remote: headlessRemote,
+	}
+	dotPrefixRemoteCfg = remoteConfig{
+		Remote: dotPrefixRemote,
+		Head:   "refs/remotes/github.com/orirawlings/.github/heads/main",
 	}
 )
 
