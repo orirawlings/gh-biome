@@ -17,14 +17,34 @@ var (
 		Disabled: true,
 	}
 	lockedRemote = Remote{
-		Name:     "github.com/orirawlings/locked",
-		Disabled: true,
+		Name:   "github.com/orirawlings/locked",
+		Locked: true,
 	}
 	headlessRemote = Remote{
 		Name: "github.com/orirawlings/headless",
 	}
 	dotPrefixRemote = Remote{
 		Name: "github.com/orirawlings/.github",
+	}
+
+	githubCLICLIRemote = Remote{
+		Name: "github.com/cli/cli",
+	}
+
+	githubGitGitRemote = Remote{
+		Name: "github.com/git/git",
+	}
+
+	githubKubernetesKubernetesRemote = Remote{
+		Name: "github.com/kubernetes/kubernetes",
+	}
+
+	githubKubernetesCommunityRemote = Remote{
+		Name: "github.com/kubernetes/community",
+	}
+
+	myGithubBizFoobarBazbizRemote = Remote{
+		Name: "my.github.biz/foobar/bazbiz",
 	}
 )
 

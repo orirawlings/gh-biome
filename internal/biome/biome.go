@@ -126,6 +126,9 @@ type Biome interface {
 	// biome.
 	Owners(context.Context) ([]Owner, error)
 
+	// Remotes returns all remotes currently configured on the biome.
+	Remotes(context.Context) ([]Remote, error)
+
 	// UpdateRemotes syncs the git remote configurations. All repositories
 	// owned by the biome's owners will be configured as remotes. Any other
 	// remotes will be dropped. HEAD references for each remote will be updated
@@ -337,6 +340,35 @@ func (b *biome) getOwners(cfg *config.Config) ([]Owner, error) {
 		}
 	}
 	return owners, errs
+}
+
+// Remotes returns all remotes currently configured on the biome.
+func (b *biome) Remotes(ctx context.Context) ([]Remote, error) {
+	var result []Remote
+	byName := make(map[string]*Remote)
+	err := b.editConfig(ctx, func(ctx context.Context, cfg *config.Config) (bool, error) {
+		biomeRemotesSubsection := cfg.Section(section).Subsection(remotesSubsection)
+		for _, opt := range biomeRemotesSubsection.Options {
+			name := opt.Value
+			if _, ok := byName[name]; !ok {
+				result = append(result, Remote{
+					Name: name,
+				})
+				byName[name] = &result[len(result)-1]
+			}
+			switch opt.Key {
+			case activeOpt:
+			case archivedOpt:
+				byName[name].Archived = true
+			case disabledOpt:
+				byName[name].Disabled = true
+			case lockedOpt:
+				byName[name].Locked = true
+			}
+		}
+		return false, nil
+	})
+	return result, err
 }
 
 // UpdateRemotes syncs the git remote configurations. All repositories

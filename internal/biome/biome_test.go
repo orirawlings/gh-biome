@@ -344,10 +344,18 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	// Add github.com/orirawlings
 	addOwners(t, ctx, b, github_com_orirawlings)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectRemotes(t, path, []string{
-		barRemote.Name,
-		archivedRemote.Name,
-		headlessRemote.Name,
+	expectGitRemotes(t, b, []Remote{
+		barRemote,
+		archivedRemote,
+		headlessRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		barRemote,
+		archivedRemote,
+		lockedRemote,
+		disabledRemote,
+		headlessRemote,
+		dotPrefixRemote,
 	})
 	expectActive(t, path, []string{
 		barRemote.Name,
@@ -381,10 +389,18 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 
 	// should be idempotent
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectRemotes(t, path, []string{
-		barRemote.Name,
-		archivedRemote.Name,
-		headlessRemote.Name,
+	expectGitRemotes(t, b, []Remote{
+		barRemote,
+		archivedRemote,
+		headlessRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		barRemote,
+		archivedRemote,
+		lockedRemote,
+		disabledRemote,
+		headlessRemote,
+		dotPrefixRemote,
 	})
 	expectActive(t, path, []string{
 		barRemote.Name,
@@ -419,24 +435,37 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
 	addOwners(t, ctx, b, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectRemotes(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"github.com/kubernetes/community",
-		"github.com/kubernetes/kubernetes",
-		barRemote.Name,
-		archivedRemote.Name,
-		headlessRemote.Name,
-		"my.github.biz/foobar/bazbiz",
+	expectGitRemotes(t, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		archivedRemote,
+		headlessRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
+		dotPrefixRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
 	expectActive(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"github.com/kubernetes/community",
-		"github.com/kubernetes/kubernetes",
+		githubCLICLIRemote.Name,
+		githubGitGitRemote.Name,
+		githubKubernetesCommunityRemote.Name,
+		githubKubernetesKubernetesRemote.Name,
 		barRemote.Name,
 		headlessRemote.Name,
-		"my.github.biz/foobar/bazbiz",
+		myGithubBizFoobarBazbizRemote.Name,
 	})
 	expectArchived(t, path, []string{
 		archivedRemote.Name,
@@ -452,14 +481,14 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	})
 	expectRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
-			"github.com/cli/cli",
+			githubCLICLIRemote.Name,
 		},
 		github_com_git.RemoteGroup(): {
-			"github.com/git/git",
+			githubGitGitRemote.Name,
 		},
 		github_com_kubernetes.RemoteGroup(): {
-			"github.com/kubernetes/community",
-			"github.com/kubernetes/kubernetes",
+			githubKubernetesCommunityRemote.Name,
+			githubKubernetesKubernetesRemote.Name,
 		},
 		github_com_orirawlings.RemoteGroup(): {
 			barRemote.Name,
@@ -467,7 +496,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 			headlessRemote.Name,
 		},
 		my_github_biz_foobar.RemoteGroup(): {
-			"my.github.biz/foobar/bazbiz",
+			myGithubBizFoobarBazbizRemote.Name,
 		},
 	})
 	expectRefs(t, ctx, path, []string{
@@ -482,21 +511,29 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		github_com_orirawlings_bar,
 	})
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectRemotes(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"github.com/kubernetes/community",
-		"github.com/kubernetes/kubernetes",
-		barRemote.Name,
-		"my.github.biz/foobar/bazbiz",
+	expectGitRemotes(t, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		githubKubernetesCommunityRemote,
+		githubKubernetesKubernetesRemote,
+		barRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
 	expectActive(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"github.com/kubernetes/community",
-		"github.com/kubernetes/kubernetes",
+		githubCLICLIRemote.Name,
+		githubGitGitRemote.Name,
+		githubKubernetesCommunityRemote.Name,
+		githubKubernetesKubernetesRemote.Name,
 		barRemote.Name,
-		"my.github.biz/foobar/bazbiz",
+		myGithubBizFoobarBazbizRemote.Name,
 	})
 	expectArchived(t, path, nil)
 	expectDisabled(t, path, nil)
@@ -504,20 +541,20 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectUnsupported(t, path, nil)
 	expectRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
-			"github.com/cli/cli",
+			githubCLICLIRemote.Name,
 		},
 		github_com_git.RemoteGroup(): {
-			"github.com/git/git",
+			githubGitGitRemote.Name,
 		},
 		github_com_kubernetes.RemoteGroup(): {
-			"github.com/kubernetes/community",
-			"github.com/kubernetes/kubernetes",
+			githubKubernetesCommunityRemote.Name,
+			githubKubernetesKubernetesRemote.Name,
 		},
 		github_com_orirawlings.RemoteGroup(): {
 			barRemote.Name,
 		},
 		my_github_biz_foobar.RemoteGroup(): {
-			"my.github.biz/foobar/bazbiz",
+			myGithubBizFoobarBazbizRemote.Name,
 		},
 	})
 	expectRefs(t, ctx, path, []string{
@@ -527,15 +564,20 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectRemotes(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"my.github.biz/foobar/bazbiz",
+	expectGitRemotes(t, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		myGithubBizFoobarBazbizRemote,
+	})
+	expectBiomeRemotes(t, ctx, b, []Remote{
+		githubCLICLIRemote,
+		githubGitGitRemote,
+		myGithubBizFoobarBazbizRemote,
 	})
 	expectActive(t, path, []string{
-		"github.com/cli/cli",
-		"github.com/git/git",
-		"my.github.biz/foobar/bazbiz",
+		githubCLICLIRemote.Name,
+		githubGitGitRemote.Name,
+		myGithubBizFoobarBazbizRemote.Name,
 	})
 	expectArchived(t, path, nil)
 	expectDisabled(t, path, nil)
@@ -543,13 +585,13 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	expectUnsupported(t, path, nil)
 	expectRemoteGroups(t, path, map[string][]string{
 		github_com_cli.RemoteGroup(): {
-			"github.com/cli/cli",
+			githubCLICLIRemote.Name,
 		},
 		github_com_git.RemoteGroup(): {
-			"github.com/git/git",
+			githubGitGitRemote.Name,
 		},
 		my_github_biz_foobar.RemoteGroup(): {
-			"my.github.biz/foobar/bazbiz",
+			myGithubBizFoobarBazbizRemote.Name,
 		},
 	})
 	expectRefs(t, ctx, path, nil)
@@ -574,12 +616,30 @@ func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) 
 	}
 }
 
-func expectRemotes(t *testing.T, path string, expected []string) {
+func expectGitRemotes(t *testing.T, b Biome, expected []Remote) {
 	t.Helper()
-	remotes := strings.Split(strings.TrimSpace(testutil.Execute(t, "git", "-C", path, "remote")), "\n")
-	expected = slices.Sorted(slices.Values(expected))
+	slices.SortFunc(expected, func(a, b Remote) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	var expectedNames []string
+	for _, r := range expected {
+		expectedNames = append(expectedNames, r.Name)
+	}
+	gitRemotes := strings.Split(strings.TrimSpace(testutil.Execute(t, "git", "-C", b.Path(), "remote")), "\n")
+	if !slices.Equal(gitRemotes, expectedNames) {
+		t.Errorf("unexpected git remotes, wanted %v, was %v:", expected, gitRemotes)
+	}
+}
+
+func expectBiomeRemotes(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
+	t.Helper()
+	slices.SortFunc(expected, func(a, b Remote) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	remotes, err := b.Remotes(ctx)
+	testutil.Check(t, err)
 	if !slices.Equal(remotes, expected) {
-		t.Errorf("unexpected remotes, wanted %v, was %v:", expected, remotes)
+		t.Errorf("unexpected biome remotes, wanted %v, was %v:", expected, remotes)
 	}
 }
 
