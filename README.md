@@ -98,7 +98,11 @@ git for-each-ref
 We can list references for just the primary branches of the remote repositories.
 
 ```
-git for-each-ref 'refs/remotes/*/*/*/HEAD'
+gh biome heads --all | xargs git for-each-ref
+```
+or
+```
+git for-each-ref $(gh biome heads --all)
 ```
 
 Sometimes, `git for-each-ref` runs slowly after an initial fetch of all the remote repositories. We can speed it up by packing all the git references into a single file, rather than many loose ref files.
@@ -135,14 +139,14 @@ git ls-files \
    "**/OWNERS"
 ```
 
-We can generalize to repeat the same for the primary branches of all remote repositories. This time, we'll only print the git object ID of each `OWNERS` file.
+We can generalize to repeat the same for the primary branches of all actively developed remote repositories (i.e. repositories that are not archived in GitHub). This time, we'll only print the git object ID of each `OWNERS` file.
 
 ```
 f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNERS"'
 git for-each-ref \
    --shell \
    --format="$f" \
-   'refs/remotes/*/*/*/HEAD' | sh
+   $(gh biome heads) | sh
 ```
 
 We can output the contents of all the `OWNERS` files as YAML multidoc.
@@ -152,7 +156,7 @@ f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNE
 git for-each-ref \
    --shell \
    --format="$f" \
-   'refs/remotes/*/*/*/HEAD' |
+   $(gh biome heads) |
 sh |
 git cat-file --batch=---
 ```
@@ -164,7 +168,7 @@ f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNE
 git for-each-ref \
    --shell \
    --format="$f" \
-   'refs/remotes/*/*/*/HEAD' |
+   $(gh biome heads) |
 sh |
 git cat-file --batch=--- |
 yq -o json |
@@ -181,11 +185,23 @@ Often times, there are archived projects in GitHub that we want to exclude from 
 ```
 git for-each-ref $(git config get --all biome.remotes.active | awk '{print "refs/remotes/" $1 "/HEAD"}')
 ```
+or
+```
+git for-each-ref $(gh biome heads --active)
+```
+or
+```
+git for-each-ref $(gh biome heads --active)
+```
 
 Or, maybe we care about only the archived projects. We can list primary branch references for archived remote GitHub repositories.
 
 ```
 git for-each-ref $(git config get --all biome.remotes.archived | awk '{print "refs/remotes/" $1 "/HEAD"}')
+```
+or
+```
+git for-each-ref $(gh biome heads --archived)
 ```
 
 biome tracks the following git config settings for discovered remote repositories:
@@ -195,6 +211,16 @@ biome tracks the following git config settings for discovered remote repositorie
 - `biome.remotes.disabled` GitHub repository that has been disabled. Fetches are not supported by GitHub. It is not configured as a git remote.
 - `biome.remotes.locked` GitHub repository that has been locked, usually because the repository has been migrated to another GitHub environment, ex. GitHub Enterprise Server to GitHub Enterprise Cloud. Fetches are not supported by GitHub. You should add the repository via its owner in the new GitHub environment instead. It is not configured as a git remote.
 - `biome.remotes.unsupported` GitHub repository that is currently unsupported by the biome. In particular, this includes GitHub repositories whose name begins with `.` such as `.github`. It is not configured as a git remote. We'd like to support these in the future.
+
+To list discovered remotes that fall into one or more of these categories, use either `git config get --all biome.remotes.<category>` or `gh biome remotes --<category>`.
+
+```
+gh biome remotes --active
+gh biome remotes --archived
+gh biome remotes --disabled
+gh biome remotes --locked
+gh biome remotes --unsupported
+```
 
 ### Updating remotes
 
