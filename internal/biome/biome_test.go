@@ -344,7 +344,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	// Add github.com/orirawlings
 	addOwners(t, ctx, b, github_com_orirawlings)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		barRemote,
 		archivedRemote,
 		headlessRemote,
@@ -389,7 +389,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 
 	// should be idempotent
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		barRemote,
 		archivedRemote,
 		headlessRemote,
@@ -435,7 +435,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 	// Add github.com/cli, github.com/git, github.com/kubernetes, my.github.biz/foobar
 	addOwners(t, ctx, b, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		githubCLICLIRemote,
 		githubGitGitRemote,
 		githubKubernetesCommunityRemote,
@@ -511,7 +511,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 		github_com_orirawlings_bar,
 	})
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		githubCLICLIRemote,
 		githubGitGitRemote,
 		githubKubernetesCommunityRemote,
@@ -564,7 +564,7 @@ func TestBiome_UpdateRemotes(t *testing.T) {
 
 	removeOwners(t, ctx, b, github_com_orirawlings, github_com_kubernetes)
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		githubCLICLIRemote,
 		githubGitGitRemote,
 		myGithubBizFoobarBazbizRemote,
@@ -606,7 +606,7 @@ func TestBiome_Remotes(t *testing.T) {
 	_, err := b.Remotes(ctx)
 	testutil.ExpectError(t, err)
 
-	expectGitRemotes(t, b, nil)
+	expectGitRemotes(t, ctx, b, nil)
 	expectBiomeRemotes(t, ctx, b, nil)
 	expectActive(t, ctx, b, nil)
 	expectArchived(t, ctx, b, nil)
@@ -616,7 +616,7 @@ func TestBiome_Remotes(t *testing.T) {
 
 	// Adding owners shouldn't cause remotes to be updated
 	addOwners(t, ctx, b, github_com_orirawlings, github_com_cli, github_com_git, github_com_kubernetes, my_github_biz_foobar)
-	expectGitRemotes(t, b, nil)
+	expectGitRemotes(t, ctx, b, nil)
 	expectBiomeRemotes(t, ctx, b, nil)
 	expectActive(t, ctx, b, nil)
 	expectArchived(t, ctx, b, nil)
@@ -626,7 +626,7 @@ func TestBiome_Remotes(t *testing.T) {
 
 	// Updating remotes should cause remotes to be added
 	testutil.Check(t, b.UpdateRemotes(ctx))
-	expectGitRemotes(t, b, []Remote{
+	expectGitRemotes(t, ctx, b, []Remote{
 		githubCLICLIRemote,
 		githubGitGitRemote,
 		githubKubernetesCommunityRemote,
@@ -695,7 +695,7 @@ func expectOwners(t *testing.T, ctx context.Context, b Biome, expected []Owner) 
 	}
 }
 
-func expectGitRemotes(t *testing.T, b Biome, expected []Remote) {
+func expectGitRemotes(t *testing.T, ctx context.Context, b Biome, expected []Remote) {
 	t.Helper()
 	slices.SortFunc(expected, func(a, b Remote) int {
 		return strings.Compare(a.Name, b.Name)
@@ -711,6 +711,11 @@ func expectGitRemotes(t *testing.T, b Biome, expected []Remote) {
 	}
 	if !slices.Equal(gitRemotes, expectedNames) {
 		t.Errorf("unexpected git remotes, wanted %v, was %v:", expected, gitRemotes)
+	}
+	remotes, err := b.Remotes(ctx, FetchableRemoteCategories...)
+	testutil.Check(t, err)
+	if !slices.Equal(remotes, expected) {
+		t.Errorf("unexpected biome remotes, wanted %v, was %v:", expected, remotes)
 	}
 }
 

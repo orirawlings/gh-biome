@@ -122,6 +122,13 @@ var (
 		Locked,
 		Unsupported,
 	}
+
+	// FetchableRemoteCategories is a list of remote categories that are
+	// fetchable from GitHub.
+	FetchableRemoteCategories = []RemoteCategory{
+		Active,
+		Archived,
+	}
 )
 
 type remoteConfig struct {
