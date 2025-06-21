@@ -74,6 +74,15 @@ func (r Remote) Supported() bool {
 	return err == nil
 }
 
+// Head returns the HEAD reference for the remote repository. This is used to
+// determine the default branch of the remote repository. The HEAD reference
+// is a symbolic reference that points to the default branch of the remote
+// repository, such as `refs/remotes/<remote name>/heads/main` or
+// `refs/remotes/<remote name>/heads/master`.
+func (r Remote) Head() string {
+	return fmt.Sprintf("refs/remotes/%s/HEAD", r.Name)
+}
+
 // RemoteCategory represents the category of a remote repository in GitHub.
 // Remote repositories can be categorized into one or more categories depending on
 // their state in GitHub. The category is used to determine how the remote

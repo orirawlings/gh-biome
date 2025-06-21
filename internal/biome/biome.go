@@ -473,7 +473,7 @@ func (b *biome) setHeads(ctx context.Context, remoteCfgs []remoteConfig) error {
 	}
 
 	for _, r := range remoteCfgs {
-		head := fmt.Sprintf("refs/remotes/%s/HEAD", r.Remote.Name)
+		head := r.Remote.Head()
 		if r.Head == "" {
 			if _, err := fmt.Fprintf(w, "option no-deref\nsymref-delete %s\n", head); err != nil {
 				return fmt.Errorf("could not delete HEAD ref for %s: %w", r.Remote.Name, err)
