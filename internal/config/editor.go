@@ -17,7 +17,13 @@ import (
 
 type Config = config.Config
 
+// Editor is an interface for editing git configurations.
 type Editor interface {
+	// Edit opens the git configuration and invokes the provided callback function
+	// with the loaded configuration. If the callback returns true, changes
+	// to the config object will be saved back to the configuration file.
+	// If the callback returns false, any changes will not be saved.
+	// If an error occurs during the editing process, it will be returned.
 	Edit(context.Context, func(context.Context, *Config) (bool, error)) error
 }
 
@@ -26,6 +32,10 @@ type editor struct {
 	helperCmd string
 }
 
+// NewEditor creates a new Editor instance for the specified git repository path.
+// It accepts optional EditorOptions to customize the editor's behavior.
+// The Editor will use the 'git config edit' command to open the configuration
+// file, and the helper command will be used to communicate with the editor server.
 func NewEditor(repoPath string, opts ...EditorOption) Editor {
 	e := editor{
 		repoPath:  repoPath,
@@ -37,6 +47,11 @@ func NewEditor(repoPath string, opts ...EditorOption) Editor {
 	return &e
 }
 
+// Edit the git configuration at the specified repository path.
+// It starts a gRPC server to handle the editing process and uses the provided
+// callback function to modify the configuration. The callback can return true
+// to save changes or false to discard them. If an error occurs during the
+// editing process, it will be returned.
 func (e *editor) Edit(ctx context.Context, do func(context.Context, *Config) (bool, error)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
