@@ -37,21 +37,6 @@ var (
 		Remote: archivedRemote,
 		Head:   "refs/remotes/github.com/orirawlings/archived/heads/master",
 	}
-	disabledRemoteCfg = remoteConfig{
-		Remote: disabledRemote,
-		Head:   "refs/remotes/github.com/orirawlings/disabled/heads/main",
-	}
-	lockedRemoteCfg = remoteConfig{
-		Remote: lockedRemote,
-		Head:   "refs/remotes/github.com/orirawlings/locked/heads/main",
-	}
-	headlessRemoteCfg = remoteConfig{
-		Remote: headlessRemote,
-	}
-	dotPrefixRemoteCfg = remoteConfig{
-		Remote: dotPrefixRemote,
-		Head:   "refs/remotes/github.com/orirawlings/.github/heads/main",
-	}
 )
 
 func TestRemote_String(t *testing.T) {
