@@ -43,9 +43,11 @@ func (o *remoteCategoryOptions) all() []biome.RemoteCategory {
 func (o *remoteCategoryOptions) AddFlags(fs *pflag.FlagSet) {
 	o.remoteCategoryValue(biome.Active).AddFlag(fs, "Include active remotes, repositories that are not archived, disabled, or locked in GitHub, and which are otherwise supported by this tool.")
 	o.remoteCategoryValue(biome.Archived).AddFlag(fs, "Include remotes that are archived in GitHub, disabled from receiving new content. https://docs.github.com/en/repositories/archiving-a-github-repository")
-	o.remoteCategoryValue(biome.Disabled).AddFlag(fs, "Include remotes that are disabled in GitHub, unable to be updated. This seems to be a rare and undocumented condition for GitHub repositories. Disabled repositories cannot be fetched. Though discovered, these will not be added as actual git remotes on the biome.")
-	o.remoteCategoryValue(biome.Locked).AddFlag(fs, "Include remotes that are locked in GitHub, disabled from any updates, usually because the repository has been migrated to a different git forge. Locked repositories cannot be fetched. Though discovered, these will not be added as actual git remotes on the biome. https://docs.github.com/en/migrations/overview/about-locked-repositories")
-	o.remoteCategoryValue(biome.Unsupported).AddFlag(fs, "Include remotes that are currently unsupported by this tool. Unsupported remotes are skipped during remote configuration setup, but are still recorded in the configuration for reference.")
+	if !o.fetchableCategoriesOnly {
+		o.remoteCategoryValue(biome.Disabled).AddFlag(fs, "Include remotes that are disabled in GitHub, unable to be updated. This seems to be a rare and undocumented condition for GitHub repositories. Disabled repositories cannot be fetched. Though discovered, these will not be added as actual git remotes on the biome.")
+		o.remoteCategoryValue(biome.Locked).AddFlag(fs, "Include remotes that are locked in GitHub, disabled from any updates, usually because the repository has been migrated to a different git forge. Locked repositories cannot be fetched. Though discovered, these will not be added as actual git remotes on the biome. https://docs.github.com/en/migrations/overview/about-locked-repositories")
+		o.remoteCategoryValue(biome.Unsupported).AddFlag(fs, "Include remotes that are currently unsupported by this tool. Unsupported remotes are skipped during remote configuration setup, but are still recorded in the configuration for reference.")
+	}
 
 	o.allRemoteCategoriesValue().AddFlag(fs, "Include all remotes, regardless of their status in GitHub.")
 }
