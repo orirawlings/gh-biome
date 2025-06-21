@@ -24,6 +24,7 @@ func TestListCmd_Execute(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("unexpected error executing command: %v", err)
 	}
+
 	expected := `github.com/cli
 github.com/orirawlings
 my.github.biz/foobar

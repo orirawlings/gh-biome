@@ -49,8 +49,34 @@ var (
 		},
 	}
 
+	github_com_orirawlings_disabled = repository{
+		IsDisabled: true,
+		URL:        "https://github.com/orirawlings/disabled",
+		DefaultBranchRef: &ref{
+			Name:   "main",
+			Prefix: "refs/heads/",
+		},
+	}
+
+	github_com_orirawlings_locked = repository{
+		IsLocked: true,
+		URL:      "https://github.com/orirawlings/locked",
+		DefaultBranchRef: &ref{
+			Name:   "main",
+			Prefix: "refs/heads/",
+		},
+	}
+
 	github_com_orirawlings_headless = repository{
 		URL: "https://github.com/orirawlings/headless",
+	}
+
+	github_com_orirawlings_dotPrefix = repository{
+		URL: "https://github.com/orirawlings/.github",
+		DefaultBranchRef: &ref{
+			Name:   "main",
+			Prefix: "refs/heads/",
+		},
 	}
 
 	github_com_cli_cli = repository{
@@ -76,7 +102,10 @@ var (
 		github_com_orirawlings.String(): {
 			github_com_orirawlings_bar,
 			github_com_orirawlings_archived,
+			github_com_orirawlings_disabled,
+			github_com_orirawlings_locked,
 			github_com_orirawlings_headless,
+			github_com_orirawlings_dotPrefix,
 		},
 		my_github_biz_foobar.String(): {
 			my_github_biz_foobar_bazbiz,
