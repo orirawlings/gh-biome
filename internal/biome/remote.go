@@ -5,11 +5,11 @@ import (
 	"os/exec"
 )
 
-// remote represents a git remote in the biome configuration. Typically the
-// remote would be stored in git config, so references and objects can be
-// fetched from the remote. The biome configuration would also record metadata
-// about whether the remote repository is still active and fetchable in GitHub.
-type remote struct {
+// Remote represents a git Remote in the biome configuration. Typically the
+// Remote would be stored in git config, so references and objects can be
+// fetched from the Remote. The biome configuration would also record metadata
+// about whether the Remote repository is still active and fetchable in GitHub.
+type Remote struct {
 
 	// Name of the git remote in the biome repository.
 	Name string
@@ -33,12 +33,12 @@ type remote struct {
 	Locked bool
 }
 
-func (r remote) String() string {
+func (r Remote) String() string {
 	return r.Name
 }
 
 // FetchURL to retrieve references and objects from.
-func (r remote) FetchURL() string {
+func (r Remote) FetchURL() string {
 	return fmt.Sprintf("https://%s.git", r.Name)
 }
 
@@ -49,7 +49,7 @@ func (r remote) FetchURL() string {
 // `git check-ref-format --refspec-pattern` to ensure it is valid.
 //
 // See https://git-scm.com/docs/git-check-ref-format
-func (r remote) FetchRefspec() (string, error) {
+func (r Remote) FetchRefspec() (string, error) {
 	src := "refs/*"
 	dst := fmt.Sprintf("refs/remotes/%s/*", r.Name)
 	c := exec.Command("git", "check-ref-format", "--refspec-pattern", dst)
@@ -69,12 +69,12 @@ func (r remote) FetchRefspec() (string, error) {
 
 // Supported returns true if this remote configuration is currently supported
 // by this tool. Unsupported remotes are skipped during configuration setup.
-func (r remote) Supported() bool {
+func (r Remote) Supported() bool {
 	_, err := r.FetchRefspec()
 	return err == nil
 }
 
 type remoteConfig struct {
-	Remote remote
+	Remote Remote
 	Head   string
 }

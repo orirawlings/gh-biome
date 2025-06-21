@@ -570,7 +570,7 @@ type repository struct {
 
 func (r repository) Remote() remoteConfig {
 	remoteCfg := remoteConfig{
-		Remote: remote{
+		Remote: Remote{
 			Name:     r.URL[8:],
 			Archived: r.IsArchived,
 			Disabled: r.IsDisabled,

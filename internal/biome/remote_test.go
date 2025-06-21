@@ -5,25 +5,25 @@ import (
 )
 
 var (
-	barRemote = remote{
+	barRemote = Remote{
 		Name: "github.com/orirawlings/bar",
 	}
-	archivedRemote = remote{
+	archivedRemote = Remote{
 		Name:     "github.com/orirawlings/archived",
 		Archived: true,
 	}
-	disabledRemote = remote{
+	disabledRemote = Remote{
 		Name:     "github.com/orirawlings/disabled",
 		Disabled: true,
 	}
-	lockedRemote = remote{
+	lockedRemote = Remote{
 		Name:     "github.com/orirawlings/locked",
 		Disabled: true,
 	}
-	headlessRemote = remote{
+	headlessRemote = Remote{
 		Name: "github.com/orirawlings/headless",
 	}
-	dotPrefixRemote = remote{
+	dotPrefixRemote = Remote{
 		Name: "github.com/orirawlings/.github",
 	}
 )
@@ -40,7 +40,7 @@ var (
 )
 
 func TestRemote_String(t *testing.T) {
-	for _, r := range []remote{
+	for _, r := range []Remote{
 		barRemote,
 		archivedRemote,
 		disabledRemote,
@@ -58,7 +58,7 @@ func TestRemote_String(t *testing.T) {
 
 func TestRemote_FetchURL(t *testing.T) {
 	for _, r := range []struct {
-		remote   remote
+		remote   Remote
 		expected string
 	}{
 		{
@@ -96,7 +96,7 @@ func TestRemote_FetchURL(t *testing.T) {
 
 func TestRemote_FetchRefspec(t *testing.T) {
 	// remotes with a vaild fetch refspec
-	for _, r := range []remote{
+	for _, r := range []Remote{
 		barRemote,
 		archivedRemote,
 		disabledRemote,
@@ -111,7 +111,7 @@ func TestRemote_FetchRefspec(t *testing.T) {
 		})
 	}
 	// remotes with an invaild fetch refspec
-	for _, r := range []remote{
+	for _, r := range []Remote{
 		dotPrefixRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestRemote_FetchRefspec(t *testing.T) {
 
 func TestRemote_Supported(t *testing.T) {
 	// remotes with a vaild fetch refspec
-	for _, r := range []remote{
+	for _, r := range []Remote{
 		barRemote,
 		archivedRemote,
 		disabledRemote,
@@ -139,7 +139,7 @@ func TestRemote_Supported(t *testing.T) {
 		})
 	}
 	// remotes with an invaild fetch refspec
-	for _, r := range []remote{
+	for _, r := range []Remote{
 		dotPrefixRemote,
 	} {
 		t.Run(r.Name, func(t *testing.T) {
