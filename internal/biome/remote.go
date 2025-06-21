@@ -14,9 +14,6 @@ type remote struct {
 	// Name of the git remote in the biome repository.
 	Name string
 
-	// FetchURL to retrieve references and objects from.
-	FetchURL string
-
 	// Archived indicates that the remote repository is archived in GitHub,
 	// disabled from receiving new content.
 	// https://docs.github.com/en/repositories/archiving-a-github-repository
@@ -38,6 +35,15 @@ type remote struct {
 	// Head is the target git reference in the biome repository that this
 	// remote's symbolic HEAD reference should point to.
 	Head string
+}
+
+func (r remote) String() string {
+	return r.Name
+}
+
+// FetchURL to retrieve references and objects from.
+func (r remote) FetchURL() string {
+	return fmt.Sprintf("https://%s.git", r.Name)
 }
 
 // FetchRefspec returns the refspec that should be used when fetching

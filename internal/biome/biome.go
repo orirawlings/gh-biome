@@ -399,7 +399,7 @@ func (b *biome) UpdateRemotes(ctx context.Context) error {
 				// Add remote
 				delete(remotesToCleanUp, r.Name)
 				addedRemotes = append(addedRemotes, r)
-				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL)
+				gitRemoteSection.Subsection(r.Name).SetOption("url", r.FetchURL())
 				gitRemoteSection.Subsection(r.Name).SetOption("fetch", refspec)
 				gitRemoteSection.Subsection(r.Name).SetOption("tagOpt", "--no-tags")
 				gitRemotesSection.AddOption(remoteGroup, r.Name)
@@ -563,7 +563,6 @@ type repository struct {
 func (r repository) Remote() remote {
 	remote := remote{
 		Name:     r.URL[8:],
-		FetchURL: r.URL + ".git",
 		Archived: r.IsArchived,
 		Disabled: r.IsDisabled,
 		Locked:   r.IsLocked,

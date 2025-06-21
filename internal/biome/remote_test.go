@@ -6,38 +6,87 @@ import (
 
 var (
 	barRemote = remote{
-		Name:     "github.com/orirawlings/bar",
-		FetchURL: "https://github.com/orirawlings/bar.git",
-		Head:     "refs/remotes/github.com/orirawlings/bar/heads/main",
+		Name: "github.com/orirawlings/bar",
+		Head: "refs/remotes/github.com/orirawlings/bar/heads/main",
 	}
 	archivedRemote = remote{
 		Name:     "github.com/orirawlings/archived",
-		FetchURL: "https://github.com/orirawlings/archived.git",
 		Archived: true,
 		Head:     "refs/remotes/github.com/orirawlings/archived/heads/master",
 	}
 	disabledRemote = remote{
 		Name:     "github.com/orirawlings/disabled",
-		FetchURL: "https://github.com/orirawlings/disabled.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/orirawlings/disabled/heads/main",
 	}
 	lockedRemote = remote{
 		Name:     "github.com/orirawlings/locked",
-		FetchURL: "https://github.com/orirawlings/locked.git",
 		Disabled: true,
 		Head:     "refs/remotes/github.com/orirawlings/locked/heads/main",
 	}
 	headlessRemote = remote{
-		Name:     "github.com/orirawlings/headless",
-		FetchURL: "https://github.com/orirawlings/headless.git",
+		Name: "github.com/orirawlings/headless",
 	}
 	dotPrefixRemote = remote{
-		Name:     "github.com/orirawlings/.github",
-		FetchURL: "https://github.com/orirawlings/.github.git",
-		Head:     "refs/remotes/github.com/orirawlings/.github/heads/main",
+		Name: "github.com/orirawlings/.github",
+		Head: "refs/remotes/github.com/orirawlings/.github/heads/main",
 	}
 )
+
+func TestRemote_String(t *testing.T) {
+	for _, r := range []remote{
+		barRemote,
+		archivedRemote,
+		disabledRemote,
+		lockedRemote,
+		headlessRemote,
+		dotPrefixRemote,
+	} {
+		t.Run(r.Name, func(t *testing.T) {
+			if r.String() != r.Name {
+				t.Errorf("expected %q, got %q", r.Name, r.String())
+			}
+		})
+	}
+}
+
+func TestRemote_FetchURL(t *testing.T) {
+	for _, r := range []struct {
+		remote   remote
+		expected string
+	}{
+		{
+			remote:   barRemote,
+			expected: "https://github.com/orirawlings/bar.git",
+		},
+		{
+			remote:   archivedRemote,
+			expected: "https://github.com/orirawlings/archived.git",
+		},
+		{
+			remote:   disabledRemote,
+			expected: "https://github.com/orirawlings/disabled.git",
+		},
+		{
+			remote:   lockedRemote,
+			expected: "https://github.com/orirawlings/locked.git",
+		},
+		{
+			remote:   headlessRemote,
+			expected: "https://github.com/orirawlings/headless.git",
+		},
+		{
+			remote:   dotPrefixRemote,
+			expected: "https://github.com/orirawlings/.github.git",
+		},
+	} {
+		t.Run(r.remote.Name, func(t *testing.T) {
+			if r.remote.FetchURL() != r.expected {
+				t.Errorf("expected %q, got %q", r.expected, r.remote.FetchURL())
+			}
+		})
+	}
+}
 
 func TestRemote_FetchRefspec(t *testing.T) {
 	// remotes with a vaild fetch refspec
