@@ -57,8 +57,8 @@ func parseOwners(args []string) ([]biome.Owner, error) {
 
 // fetch git remotes for the given owners (or all remotes if no owners given)
 // in the git repo in the current directory.
-func fetch(ctx context.Context, cmd *cobra.Command, owners []biome.Owner) error {
-	fetchArgs := []string{"-C", ".", "fetch"}
+func fetch(ctx context.Context, cmd *cobra.Command, b biome.Biome, owners []biome.Owner) error {
+	fetchArgs := []string{"-C", b.Path(), "fetch"}
 	if len(owners) == 0 {
 		fetchArgs = append(fetchArgs, "--all")
 	} else {

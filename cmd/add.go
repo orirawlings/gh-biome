@@ -80,7 +80,7 @@ biome add github.com/orirawlings github.com/git github.com/cli
 
 		// fetch remotes
 		if !skipFetch {
-			if err := fetch(ctx, cmd, owners); err != nil {
+			if err := fetch(ctx, cmd, b, owners); err != nil {
 				return err
 			}
 		}

@@ -67,6 +67,6 @@ biome fetch github.com/orirawlings github.com/git github.com/cli
 		}
 
 		// fetch remotes
-		return fetch(ctx, cmd, owners)
+		return fetch(ctx, cmd, b, owners)
 	},
 }
