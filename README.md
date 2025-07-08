@@ -98,11 +98,7 @@ git for-each-ref
 We can list references for just the primary branches of the remote repositories.
 
 ```
-gh biome heads --all | xargs git for-each-ref
-```
-or
-```
-git for-each-ref $(gh biome heads --all)
+gh biome heads --all | git for-each-ref --stdin
 ```
 
 Sometimes, `git for-each-ref` runs slowly after an initial fetch of all the remote repositories. We can speed it up by packing all the git references into a single file, rather than many loose ref files.
@@ -127,7 +123,7 @@ git maintenance start
 
 ### Analyzing content
 
-The Kubernetes communities uses [`OWNERS` files](https://www.kubernetes.dev/docs/guide/owners/) to keep track of which developers are responsible for different parts of the codebase. Our biome has downloaded all the various Kubernetes git repositories, let's analyze the `OWNERS` file content across the entire community.
+The Kubernetes community uses [`OWNERS` files](https://www.kubernetes.dev/docs/guide/owners/) to keep track of which developers are responsible for different parts of the codebase. Our biome has downloaded all the various Kubernetes git repositories. Let's analyze the `OWNERS` file content across the entire community.
 
 To start, we can discover all the `OWNERS` files in the primary branch of a single remote repository (`github.com/kubernetes/kubernetes`). `git ls-files` will walk the source tree, outputting data for each path that matches our globbing pattern.
 
@@ -143,20 +139,17 @@ We can generalize to repeat the same for the primary branches of all actively de
 
 ```
 f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNERS"'
-git for-each-ref \
-   --shell \
-   --format="$f" \
-   $(gh biome heads) | sh
+gh biome heads |
+git for-each-ref --stdin --shell --format="$f" |
+sh
 ```
 
 We can output the contents of all the `OWNERS` files as YAML multidoc.
 
 ```
 f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNERS"'
-git for-each-ref \
-   --shell \
-   --format="$f" \
-   $(gh biome heads) |
+gh biome heads |
+git for-each-ref --stdin --shell --format="$f" |
 sh |
 git cat-file --batch=---
 ```
@@ -165,10 +158,8 @@ We can use tools like [`yq`](https://github.com/mikefarah/yq) and [`jq`](https:/
 
 ```
 f='git ls-files --with-tree=%(refname) --format="%%(objectname)" OWNERS "**/OWNERS"'
-git for-each-ref \
-   --shell \
-   --format="$f" \
-   $(gh biome heads) |
+gh biome heads |
+git for-each-ref --stdin --shell --format="$f" |
 sh |
 git cat-file --batch=--- |
 yq -o json |
@@ -183,25 +174,21 @@ sort -n
 Often times, there are archived projects in GitHub that we want to exclude from analysis. The biome tracks which remotes are in an active or archived state under git config values. We can list primary branch references for just the active (i.e. non-archived/non-locked) remote GitHub repositories.
 
 ```
-git for-each-ref $(git config get --all biome.remotes.active | awk '{print "refs/remotes/" $1 "/HEAD"}')
+git config get --all biome.remotes.active | awk '{print "refs/remotes/" $1 "/HEAD"}' | git for-each-ref --stdin
 ```
 or
 ```
-git for-each-ref $(gh biome heads --active)
-```
-or
-```
-git for-each-ref $(gh biome heads --active)
+gh biome heads --active | git for-each-ref --stdin
 ```
 
 Or, maybe we care about only the archived projects. We can list primary branch references for archived remote GitHub repositories.
 
 ```
-git for-each-ref $(git config get --all biome.remotes.archived | awk '{print "refs/remotes/" $1 "/HEAD"}')
+git config get --all biome.remotes.archived | awk '{print "refs/remotes/" $1 "/HEAD"}' | git for-each-ref --stdin
 ```
 or
 ```
-git for-each-ref $(gh biome heads --archived)
+gh biome heads --archived | git for-each-ref --stdin
 ```
 
 biome tracks the following git config settings for discovered remote repositories:
@@ -234,4 +221,4 @@ gh biome fetch
 
 Many more analyses and mutations are possible.
 
-Most underlying git commands support batch-oriented modes where they can operate on many references or objects simultaneously (ex. `git for-each-ref`, `git cat-file --batch{,-check,-command}`, `git rev-list --stdin`, `git update-ref --stdin`, etc). We can use this to our advantage to perform fast bulk operations/queries, amortizing the cost of fetching the git data from the server and avoiding the overhead of opening many individual files on our filesystem. This can often be advantageous over extracting the similar information directly from the GitHub APIs, especially if we're still iterating on the design of our analysis. It also enables analysis even when we lack sufficient disk space to checkout all source files to a local working directory.
+Most underlying git commands support batch-oriented modes where they can operate on many references or objects simultaneously (ex. `git for-each-ref --stdin`, `git cat-file --batch{,-check,-command}`, `git rev-list --stdin`, `git update-ref --stdin`, etc). We can use this to our advantage to perform fast bulk operations/queries, amortizing the cost of fetching the git data from the server and avoiding the overhead of opening many individual files on our filesystem. This can often be advantageous over extracting the similar information directly from the GitHub APIs, especially if we're still iterating on the design of our analysis. It also enables analysis even when we lack sufficient disk space to check out all source files to a local working directory.
