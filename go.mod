@@ -7,7 +7,7 @@ require (
 	github.com/cli/shurcooL-graphql v0.0.4
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/pflag v1.0.7
 	google.golang.org/grpc v1.74.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/h2non/gock.v1 v1.1.2
