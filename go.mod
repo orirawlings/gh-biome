@@ -3,7 +3,7 @@ module github.com/orirawlings/gh-biome
 go 1.23.2
 
 require (
-	github.com/cli/go-gh/v2 v2.12.1
+	github.com/cli/go-gh/v2 v2.12.2
 	github.com/cli/shurcooL-graphql v0.0.4
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/spf13/cobra v1.9.1
